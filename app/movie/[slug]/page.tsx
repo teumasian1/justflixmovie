@@ -5,8 +5,9 @@ import { idFromSlug } from '@/lib/slug';
 import { buildDetailMetadata } from '@/lib/detail';
 import DetailView from '@/components/DetailView';
 
-// SSR + ISR per movie title. generateMetadata emits a unique title/description/
+// SSR per movie title. generateMetadata emits a unique title/description/
 // canonical/OG so each movie indexes as its own page.
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 type Params = { params: { slug: string } };

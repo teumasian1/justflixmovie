@@ -5,7 +5,8 @@ import { idFromSlug } from '@/lib/slug';
 import { buildDetailMetadata } from '@/lib/detail';
 import DetailView from '@/components/DetailView';
 
-// SSR + ISR per TV title.
+// SSR per TV title.
+export const runtime = 'edge';
 export const revalidate = 86400;
 
 type Params = { params: { slug: string } };

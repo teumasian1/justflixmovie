@@ -7,8 +7,9 @@ import {
 import Banner from '@/components/Banner';
 import Row from '@/components/Row';
 
-// ISR: the homepage HTML is regenerated at most once per hour. Crawlers and the
-// first visitor get fully-rendered content (rows + banner) in the initial HTML.
+// Rendered at the edge (Cloudflare Pages). Crawlers and the first visitor get
+// fully-rendered content (rows + banner) in the initial HTML.
+export const runtime = 'edge';
 export const revalidate = 3600;
 
 export default async function HomePage() {

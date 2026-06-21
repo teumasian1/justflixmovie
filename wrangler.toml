@@ -1,0 +1,9 @@
+name = "justflixmovie"
+compatibility_date = "2026-06-21"
+# Required by @cloudflare/next-on-pages so the Next.js server runtime
+# (server components + the /api/tmdb route) can run on Workers.
+compatibility_flags = ["nodejs_compat"]
+# Tells wrangler this is a Pages project and where next-on-pages writes its
+# output. With this set, `wrangler pages deploy` needs no path argument and the
+# Cloudflare dashboard auto-detects the output directory.
+pages_build_output_dir = ".vercel/output/static"

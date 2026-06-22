@@ -31,13 +31,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const seen = new Set<string>();
 
-  // Normalize a raw TMDB date string (usually "YYYY-MM-DD", but sometimes empty
-  // or malformed) into a valid Date. Invalid/missing values fall back to `now`
-  // so every <lastmod> in the sitemap is a well-formed W3C datetime.
+  // Normalize a raw TMDB date string into a valid Date. TMDB data is messy: some
+  // entries are empty, some are unparseable, and some have typo years like
+  // "0201-12-25" or "0001-01-01" that parse to a *valid* Date object but serialize
+  // to a nonsensical <lastmod> year Google rejects. So we reject NaN AND any date
+  // outside a sane range (first film ever → tomorrow), falling back to `now`.
+  const MIN_YEAR = 1888; // Roundhay Garden Scene, the oldest surviving film
+  const maxTime = now.getTime() + 24 * 60 * 60 * 1000; // allow up to tomorrow
   const toLastModified = (raw?: string): Date => {
     if (!raw) return now;
     const d = new Date(raw);
-    return isNaN(d.getTime()) ? now : d;
+    const t = d.getTime();
+    if (isNaN(t) || d.getUTCFullYear() < MIN_YEAR || t > maxTime) return now;
+    return d;
   };
 
   const entries: MetadataRoute.Sitemap = [

@@ -31,6 +31,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const seen = new Set<string>();
 
+  // Normalize a raw TMDB date string (usually "YYYY-MM-DD", but sometimes empty
+  // or malformed) into a valid Date. Invalid/missing values fall back to `now`
+  // so every <lastmod> in the sitemap is a well-formed W3C datetime.
+  const toLastModified = (raw?: string): Date => {
+    if (!raw) return now;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? now : d;
+  };
+
   const entries: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: `${SITE_URL}/browse`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
@@ -45,7 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       entries.push({
         url: `${SITE_URL}${href}`,
         // Use the release/air date as lastModified when available, else now.
-        lastModified: item.release_date || item.first_air_date || now,
+        lastModified: toLastModified(item.release_date || item.first_air_date),
         changeFrequency: 'weekly',
         priority: 0.7,
       });

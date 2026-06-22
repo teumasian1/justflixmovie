@@ -185,6 +185,27 @@ body, button, input, select, textarea {
   clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 
+/* Skip-navigation link: visually hidden until focused, then pinned top-left
+   above the fixed navbar so keyboard users can jump straight to <main>. */
+.skip-link {
+  position: fixed;
+  top: 8px; left: 8px;
+  z-index: 3000;
+  padding: 10px 16px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--accent, #ff2d78);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform 0.2s var(--ease-out, ease);
+}
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 /* ===== NAVBAR ===== */
 .navbar {
   display: flex;
@@ -688,6 +709,11 @@ body, button, input, select, textarea {
 /* Poster cards */
 .poster-container, .list .poster-container {
   position: relative;
+  /* Rendered as an <a> for crawlable internal links — reset link styling and
+     force block layout so width/height apply as they did on the old <div>. */
+  display: block;
+  color: inherit;
+  text-decoration: none;
   flex: 0 0 auto;
   min-width: 196px; width: 196px;
   height: 294px;

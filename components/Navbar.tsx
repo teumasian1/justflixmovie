@@ -61,17 +61,18 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="navbar">
+      <header className="navbar">
         <Link href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/lulu.png" alt="JustFlixMovies" width={81} height={54} style={{ cursor: 'pointer' }} id="logo" />
         </Link>
-        <div className="nav-links">
+        <nav className="nav-links">
           <button className="browse-btn" onClick={() => router.push('/browse')}>
             Browse <i className="fas fa-film" />
           </button>
           <div
             ref={containerRef}
+            role="search"
             className={`search-container ${mobileOpen ? 'is-open' : ''}`}
           >
             <button
@@ -97,8 +98,8 @@ export default function Navbar() {
             <i className="fas fa-moon dark-icon" />
             <i className="fas fa-sun light-icon" />
           </button>
-        </div>
-      </div>
+        </nav>
+      </header>
 
       {results !== null && (
         <div className="search-results-container" style={{ display: 'block' }}>

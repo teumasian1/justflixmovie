@@ -36,8 +36,18 @@ export function buildDetailMetadata(
   const url = `${SITE_URL}${path}`;
   const overview = item.overview || `Watch ${title} online free in HD on JustFlixMovies.`;
 
-  const pageTitle = `${title}${year ? ` (${year})` : ''} - Watch Free in HD | JustFlixMovies`;
-  const metaDesc = truncate(`Watch ${title}${year ? ` (${year})` : ''} online free in HD. ${overview}`);
+  const base = `${title}${year ? ` (${year})` : ''}`;
+  // OG/Twitter titles aren't length-constrained, so keep the fully descriptive
+  // form there. The <title> tag, however, gets truncated in SERPs past ~60
+  // chars — so drop the "Watch Free in HD" marketing tail when the full title
+  // would overflow, always keeping the brand suffix.
+  const ogTitle = `${base} - Watch Free in HD | JustFlixMovies`;
+  const pageTitle = ogTitle.length <= 60 ? ogTitle : `${base} | JustFlixMovies`;
+  const metaDesc = truncate(`Watch ${base} online free in HD. ${overview}`);
+
+  // TMDB posters are served at the w500 size → 500×750 (2:3). Declaring the
+  // dimensions lets social platforms render the card without a reflow/refetch.
+  const ogImage = { url: poster, width: 500, height: 750 };
 
   return {
     // `absolute` opts out of the root layout's "%s | JustFlixMovies" template —
@@ -47,16 +57,16 @@ export function buildDetailMetadata(
     alternates: { canonical: url },
     openGraph: {
       type: type === 'tv' ? 'video.tv_show' : 'video.movie',
-      title: pageTitle,
+      title: ogTitle,
       description: metaDesc,
       url,
-      images: [poster],
+      images: [ogImage],
     },
     twitter: {
       card: 'summary_large_image',
-      title: pageTitle,
+      title: ogTitle,
       description: metaDesc,
-      images: [poster],
+      images: [ogImage],
     },
   };
 }

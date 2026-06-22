@@ -82,7 +82,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <div id="main-content" style={{ display: 'block' }}>
+      <div style={{ display: 'block' }}>
         <Banner items={bannerItems} />
         <Row title="Trending Movies to Watch Online" items={movieRow} />
         <Row title="Popular TV Shows to Stream Online" items={tvRow} />
@@ -105,14 +105,11 @@ export default async function HomePage() {
 
         <h2>Good Movies to Watch — Across Every Genre</h2>
         <p>
-          Looking for <strong>good movies to watch</strong> tonight? Whether you want{' '}
-          <strong>great movies to watch</strong> with friends or <strong>fun movies to watch</strong>{' '}
-          on a lazy weekend, our library is updated daily across every genre. Dive into{' '}
-          <strong>horror movies to watch</strong> for a scare, <strong>comedy movies to watch</strong>{' '}
-          for a laugh, timeless <strong>classic movies to watch</strong>, or the kind of{' '}
-          <strong>movies to watch on Netflix</strong> and other streaming services — available here
-          to <strong>watch movies online free</strong>. Use our genre, year, and country filters to
-          find exactly what you are in the mood for.
+          Looking for <strong>good movies to watch</strong> tonight? Our library is updated daily
+          across every genre — horror for a scare, comedy for a laugh, timeless classics, and
+          feel-good films for a lazy weekend. Whatever you are in the mood for, you can{' '}
+          <strong>watch movies online free</strong> here in HD. Use our genre, year, and country
+          filters to find exactly the right title.
         </p>
 
         <h2>Family Movies to Watch Together</h2>

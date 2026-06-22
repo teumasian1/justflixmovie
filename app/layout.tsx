@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   applicationName: 'JustFlixMovies',
   description:
-    'Watch free movies and TV shows online in HD quality. Stream trending movies, popular TV series, anime, and Korean dramas. No registration required. JustFlixMovies.',
+    'Watch free movies and TV shows online in HD. Stream trending movies, popular TV series, anime, and Korean dramas — no registration required.',
   keywords:
     'movies to watch, good movies to watch, movies to watch on netflix, watch free movies, watch free movies online, what movie should i watch, watch movies online free, website to watch movies for free, fun movies to watch, great movies to watch, horror movies to watch, sites for watching free movies, classic movies to watch, comedy movies to watch, family movies to watch, movie to watch with family, hd movies, free full movies, tv shows, anime, korean drama, trending movies',
   authors: [{ name: 'JustFlixMovies' }],
@@ -42,7 +42,9 @@ export const metadata: Metadata = {
     description:
       'Watch free movies and TV shows online in HD quality. Stream trending movies, popular TV series, anime, and Korean dramas.',
     url: SITE_URL,
-    images: ['/lulu.png'],
+    // Declare the real dimensions of the OG image (lulu.png is 1536×1024) so
+    // social platforms render the card without a reflow/refetch.
+    images: [{ url: '/lulu.png', width: 1536, height: 1024 }],
     locale: 'en_US',
   },
   twitter: {
@@ -50,7 +52,7 @@ export const metadata: Metadata = {
     title: 'JustFlixMovies - Watch Free Movies & TV Shows',
     description:
       'Watch free movies and TV shows online in HD. Stream trending movies, anime, K-dramas, and more.',
-    images: ['/lulu.png'],
+    images: [{ url: '/lulu.png', width: 1536, height: 1024 }],
   },
 };
 
@@ -136,9 +138,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Popunder />
       </head>
       <body>
+        {/* Skip link: first focusable element, jumps past the nav to <main>. */}
+        <a href="#main-content" className="skip-link">Skip to content</a>
         <ModalProvider>
           <Navbar />
-          {children}
+          {/* Single <main> landmark for every page; also the skip-link target. */}
+          <main id="main-content">{children}</main>
           <Footer />
           <PlayerModal />
         </ModalProvider>

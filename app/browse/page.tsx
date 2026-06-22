@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Browse from '@/components/Browse';
 
 export const metadata: Metadata = {
-  // Root layout's template appends " | JustFlixMovies".
-  title: 'Browse Movies & TV Shows by Genre, Year & Country',
+  // Root layout's template appends " | JustFlixMovies" (~17 chars), so keep the
+  // base short enough that the full title stays under ~60 chars in SERPs.
+  title: 'Browse Movies & TV Shows by Genre & Year',
   description:
     'Browse and filter free movies and TV shows by genre, release year, country, and popularity. Stream in HD with no registration on JustFlixMovies.',
   alternates: { canonical: '/browse' },

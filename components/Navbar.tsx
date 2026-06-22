@@ -64,7 +64,7 @@ export default function Navbar() {
       <div className="navbar">
         <Link href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/lulu.png" alt="JustFlixMovies" style={{ cursor: 'pointer' }} id="logo" />
+          <img src="/lulu.png" alt="JustFlixMovies" width={81} height={54} style={{ cursor: 'pointer' }} id="logo" />
         </Link>
         <div className="nav-links">
           <button className="browse-btn" onClick={() => router.push('/browse')}>
@@ -128,6 +128,8 @@ export default function Navbar() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     className="search-result-poster"
+                    width={500}
+                    height={750}
                     src={`${IMG_URL}${item.poster_path}`}
                     alt={item.title || item.name || ''}
                   />

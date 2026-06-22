@@ -35,6 +35,8 @@ export default function PosterCard({ item }: { item: TmdbItem }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         loading="lazy"
+        width={500}
+        height={750}
         src={`${IMG_URL}${item.poster_path}`}
         alt={title}
         onLoad={() => setLoaded(true)}

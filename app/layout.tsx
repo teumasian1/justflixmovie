@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import PlayerModal from '@/components/PlayerModal';
 import Popunder from '@/components/Popunder';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.pages.dev';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

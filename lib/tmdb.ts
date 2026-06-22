@@ -5,7 +5,7 @@
 
 export const BASE_URL = 'https://api.themoviedb.org/3';
 export const IMG_URL = 'https://image.tmdb.org/t/p/w500'; // posters
-export const BACKDROP_URL = 'https://image.tmdb.org/t/p/original'; // banner
+export const BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280'; // banner
 export const STILL_URL = 'https://image.tmdb.org/t/p/w300'; // episode stills
 
 const API_KEY = process.env.TMDB_API_KEY;

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     'Watch free movies and TV shows online in HD quality. Stream trending movies, popular TV series, anime, and Korean dramas. No registration required. JustFlixMovies.',
   keywords:
-    'watch movies online free, free movies, tv shows, streaming, watch series online, anime, korean drama, HD movies, trending movies, new releases',
+    'movies to watch, good movies to watch, movies to watch on netflix, watch free movies, watch free movies online, what movie should i watch, watch movies online free, website to watch movies for free, fun movies to watch, great movies to watch, horror movies to watch, sites for watching free movies, classic movies to watch, comedy movies to watch, family movies to watch, movie to watch with family, hd movies, free full movies, tv shows, anime, korean drama, trending movies',
   authors: [{ name: 'JustFlixMovies' }],
   creator: 'JustFlixMovies',
   publisher: 'JustFlixMovies',

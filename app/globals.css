@@ -1312,6 +1312,16 @@ body, button, input, select, textarea {
 }
 .seo-content p { margin-bottom: 16px; }
 .seo-content strong { color: var(--text-primary); font-weight: 600; }
+.seo-content h2 {
+  color: var(--text-primary); font-weight: 700;
+  font-size: 1.15rem; margin: 28px 0 12px;
+}
+.seo-content h2:first-child { margin-top: 0; }
+.seo-content a { color: var(--accent, #3b82f6); text-decoration: none; }
+.seo-content a:hover { text-decoration: underline; }
+.seo-content .faq { margin: 0; }
+.seo-content .faq dt { color: var(--text-primary); font-weight: 600; margin-top: 16px; }
+.seo-content .faq dd { margin: 6px 0 0; }
 
 /* ===== FOOTER ===== */
 .footer {

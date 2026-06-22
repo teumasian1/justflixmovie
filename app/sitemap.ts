@@ -31,19 +31,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const seen = new Set<string>();
 
-  // Normalize a raw TMDB date string into a valid Date. TMDB data is messy: some
-  // entries are empty, some are unparseable, and some have typo years like
-  // "0201-12-25" or "0001-01-01" that parse to a *valid* Date object but serialize
-  // to a nonsensical <lastmod> year Google rejects. So we reject NaN AND any date
-  // outside a sane range (first film ever → tomorrow), falling back to `now`.
-  const MIN_YEAR = 1888; // Roundhay Garden Scene, the oldest surviving film
+  // Normalize a raw TMDB date string into a Date that Google's sitemap validator
+  // accepts. TMDB data is messy and old films break <lastmod> in two ways:
+  //   1. empty / unparseable / typo-year strings ("", "0201-12-25").
+  //   2. pre-1970 release dates ("1957-04-10") — these are valid ISO strings, but
+  //      Google rejects lastmod values before the Unix epoch (negative timestamps).
+  // Both fall back to `now`, which is also semantically correct: lastmod is when
+  // OUR page last changed, and these pages are (re)generated now, not in 1957.
+  const MIN_TIME = Date.parse('1970-01-01T00:00:00Z'); // Unix epoch; Google's floor
   const maxTime = now.getTime() + 24 * 60 * 60 * 1000; // allow up to tomorrow
   const toLastModified = (raw?: string): Date => {
     if (!raw) return now;
-    const d = new Date(raw);
-    const t = d.getTime();
-    if (isNaN(t) || d.getUTCFullYear() < MIN_YEAR || t > maxTime) return now;
-    return d;
+    const t = new Date(raw).getTime();
+    if (isNaN(t) || t < MIN_TIME || t > maxTime) return now;
+    return new Date(t);
   };
 
   const entries: MetadataRoute.Sitemap = [

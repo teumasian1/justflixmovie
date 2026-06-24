@@ -559,6 +559,19 @@ body, button, input, select, textarea {
 /* ===== CONTENT ROWS ===== */
 .row { margin: clamp(28px, 3.4vw, 48px) 0; padding: 0; width: 100%; }
 
+/* Recently-watched row: the row plus a small "clear" control over its header. */
+.history-row { position: relative; }
+.history-clear {
+  position: absolute; right: 4%; top: clamp(28px, 3.4vw, 48px); z-index: 5;
+  padding: 6px 12px;
+  background: transparent; border: var(--hair);
+  color: var(--text-secondary); cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  transition: all 0.18s ease;
+}
+.history-clear:hover { border-color: var(--accent); color: var(--accent); }
+
 /* Scroll reveal — content rises + fades in as it scrolls into view.
    The hidden initial state is scoped under .reveal-ready (added by JS), so
    if the script fails or JS is disabled, content stays fully visible. */
@@ -1155,6 +1168,22 @@ body, button, input, select, textarea {
 .season-dropdown:hover, .season-dropdown:focus { border-color: var(--accent); outline: none; }
 .server-dropdown option, .season-dropdown option { background: #0A0A0A; color: var(--text-primary); }
 
+.modal-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; width: 100%;
+}
+.copy-link-btn {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 15px; white-space: nowrap;
+  background: transparent; border: var(--hard);
+  border-radius: 0; color: var(--text-primary); cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.82rem;
+  transition: all 0.18s ease;
+}
+.copy-link-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-link-btn.copied { border-color: var(--accent); color: var(--accent); }
+
 .server-btn {
   padding: 7px 15px;
   background: transparent; border: var(--hard);
@@ -1529,6 +1558,7 @@ body, button, input, select, textarea {
   .modal-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: 16px 20px 24px; }
   .modal-image { width: min(36vw, 150px); height: auto; margin: 24px auto 0; }
   .modal-text { width: 100%; text-align: center; }
+  .modal-title-row { flex-direction: column; align-items: center; gap: 12px; }
   .modal-text h2 { font-size: clamp(1.6rem, 6vw, 2.2rem); }
   .modal-meta { justify-content: center; gap: 8px; }
   #modal-description { font-size: 0.88rem; -webkit-line-clamp: 4; line-clamp: 4; }

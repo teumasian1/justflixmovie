@@ -9,6 +9,7 @@ import {
 } from '@/lib/tmdb';
 import Banner from '@/components/Banner';
 import Row from '@/components/Row';
+import WatchHistoryRow from '@/components/WatchHistoryRow';
 
 // Curated list page: the banner slideshow + trending rows. Reachable from the
 // welcome landing (/) via the "Browse the curated list" call-to-action.
@@ -53,6 +54,7 @@ export default async function HomePage() {
     <>
       <div style={{ display: 'block' }}>
         <Banner items={bannerItems} />
+        <WatchHistoryRow />
         <Row title="Trending Movies to Watch Online" items={movieRow} />
         <Row title="Popular TV Shows to Stream Online" items={tvRow} />
         <Row title="Watch Free Anime Online" items={animeRow} />

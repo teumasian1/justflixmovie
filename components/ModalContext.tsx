@@ -2,16 +2,21 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import type { TmdbItem, MediaType } from '@/lib/tmdb';
+import { addToHistory } from '@/lib/history';
 
 export interface OpenOptions {
   // Delay (ms) before the modal typewriter starts — raised by the launch
   // animation so typing begins only once the launch overlay has dissolved.
   typeDelay?: number;
+  // True when the modal is opened over its own SSR detail route (via AutoOpen),
+  // so closing should head to /home rather than reveal the bare detail page.
+  fromRoute?: boolean;
 }
 
 interface ModalState {
   item: (TmdbItem & { media_type: MediaType }) | null;
   typeDelay: number;
+  fromRoute: boolean;
   open: (item: TmdbItem, opts?: OpenOptions) => void;
   close: () => void;
 }
@@ -25,10 +30,14 @@ function resolveType(item: TmdbItem): MediaType {
 export function ModalProvider({ children }: { children: ReactNode }) {
   const [item, setItem] = useState<ModalState['item']>(null);
   const [typeDelay, setTypeDelay] = useState(420);
+  const [fromRoute, setFromRoute] = useState(false);
 
   const open = useCallback((next: TmdbItem, opts?: OpenOptions) => {
     setTypeDelay(opts?.typeDelay ?? 420);
-    setItem({ ...next, media_type: resolveType(next) });
+    setFromRoute(opts?.fromRoute ?? false);
+    const resolved = { ...next, media_type: resolveType(next) };
+    setItem(resolved);
+    addToHistory(resolved);
   }, []);
 
   const close = useCallback(() => {
@@ -36,7 +45,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ModalContext.Provider value={{ item, typeDelay, open, close }}>
+    <ModalContext.Provider value={{ item, typeDelay, fromRoute, open, close }}>
       {children}
     </ModalContext.Provider>
   );

@@ -11,7 +11,7 @@ import { useModal } from './ModalContext';
 export default function AutoOpen({ item, type }: { item: TmdbItem; type: MediaType }) {
   const { open } = useModal();
   useEffect(() => {
-    open({ ...item, media_type: type });
+    open({ ...item, media_type: type }, { fromRoute: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;

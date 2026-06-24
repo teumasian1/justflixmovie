@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { IMG_URL, type TmdbEpisode, type TmdbSeason } from '@/lib/tmdb';
 import { SERVERS, PROBE_SERVERS, getServerUrl, nextServer } from '@/lib/servers';
 import { buildHref, titleOf } from '@/lib/slug';
@@ -18,8 +19,30 @@ interface SeasonEpisodes {
   episodes: TmdbEpisode[];
 }
 
+// Copy to clipboard with a fallback for browsers/contexts where the async
+// Clipboard API is unavailable (e.g. non-secure origins).
+function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  return new Promise((resolve) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch {
+      /* ignore */
+    }
+    ta.remove();
+    resolve();
+  });
+}
+
 export default function PlayerModal() {
-  const { item, typeDelay, close } = useModal();
+  const { item, typeDelay, fromRoute, close } = useModal();
+  const router = useRouter();
 
   const [server, setServer] = useState<string>('vidup.to');
   const [seasons, setSeasons] = useState<TmdbSeason[]>([]);
@@ -27,6 +50,7 @@ export default function PlayerModal() {
   const [episodes, setEpisodes] = useState<TmdbEpisode[]>([]);
   const [episode, setEpisode] = useState<number>(1);
   const [iframeUrl, setIframeUrl] = useState<string>('');
+  const [copied, setCopied] = useState(false);
 
   // Typewriter output.
   const [typedTitle, setTypedTitle] = useState('');
@@ -43,16 +67,19 @@ export default function PlayerModal() {
 
   useEffect(() => {
     if (!item) return;
-    const href = buildHref(type, item);
-    // Push a single history entry per item. React Strict Mode (and remounts)
-    // run this effect twice in dev; guard so we never stack duplicate entries
-    // that a single Back/close couldn't unwind — which left the movie URL up.
-    if (pushedIdRef.current !== item.id) {
+    const prevTitle = document.title;
+    document.title = `${titleOf(item)} - JustFlixMovies`;
+
+    // When opened in-app (poster/banner click), push a single history entry per
+    // item so the deep link is shareable and Back/close can unwind it. React
+    // Strict Mode (and remounts) run this effect twice in dev; guard against
+    // stacking duplicates. When opened over its own detail route (AutoOpen),
+    // the URL is already correct — don't push, so we never reveal a duplicate.
+    if (!fromRoute && pushedIdRef.current !== item.id) {
+      const href = buildHref(type, item);
       window.history.pushState({ type, id: item.id }, '', href);
       pushedIdRef.current = item.id;
     }
-    const prevTitle = document.title;
-    document.title = `${titleOf(item)} - JustFlixMovies`;
 
     const onPop = () => {
       // Our entry was popped by a navigation (Back button or history.back()).
@@ -67,15 +94,36 @@ export default function PlayerModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id]);
 
-  // Close button / overlay: undo the pushed history entry so the URL returns to
-  // where it was before the modal opened. popstate then drives the actual close.
+  // Close button: restore where the user came from. Opened over a detail route
+  // → go to /home (revealing that bare SEO page would be confusing). Opened
+  // in-app → pop our pushed entry so the URL returns to the previous page.
   const dismiss = useCallback(() => {
-    if (pushedIdRef.current !== null) {
+    if (fromRoute) {
+      close();
+      router.push('/home');
+    } else if (pushedIdRef.current !== null) {
       window.history.back();
     } else {
       close();
     }
-  }, [close]);
+  }, [fromRoute, router, close]);
+
+  // Copy the title's shareable deep link, showing a brief "Copied!" confirmation.
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyLink = useCallback(() => {
+    if (!item) return;
+    const url = `${window.location.origin}${buildHref(type, item)}`;
+    copyToClipboard(url).finally(() => {
+      setCopied(true);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 1600);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id]);
+
+  useEffect(() => () => {
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+  }, []);
 
   // ---- Typewriter ----
   const clearTimers = useCallback(() => {
@@ -301,7 +349,19 @@ export default function PlayerModal() {
               />
             </div>
             <div className="modal-text">
-              <h2 className="tw-done">{typedTitle}</h2>
+              <div className="modal-title-row">
+                <h2 className="tw-done">{typedTitle}</h2>
+                <button
+                  type="button"
+                  className={`copy-link-btn ${copied ? 'copied' : ''}`}
+                  onClick={copyLink}
+                  aria-label="Copy link to this title"
+                  title="Copy link"
+                >
+                  <i className={`fas ${copied ? 'fa-check' : 'fa-link'}`} aria-hidden="true" />
+                  <span>{copied ? 'Copied!' : 'Copy link'}</span>
+                </button>
+              </div>
               <div className="modal-meta">
                 <div className="stars">
                   {'★'.repeat(Math.round((item.vote_average || 0) / 2))}

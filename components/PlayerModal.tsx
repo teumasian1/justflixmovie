@@ -36,14 +36,29 @@ export default function PlayerModal() {
   const type = item?.media_type ?? 'movie';
 
   // ---- URL + history (shareable deep link, mirrors original showDetails) ----
+  // Holds the id of the item we pushed a history entry for, so closing can pop
+  // exactly that one entry (restoring the previous URL) rather than leaving the
+  // deep link in the address bar.
+  const pushedIdRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!item) return;
     const href = buildHref(type, item);
-    window.history.pushState({ type, id: item.id }, '', href);
+    // Push a single history entry per item. React Strict Mode (and remounts)
+    // run this effect twice in dev; guard so we never stack duplicate entries
+    // that a single Back/close couldn't unwind — which left the movie URL up.
+    if (pushedIdRef.current !== item.id) {
+      window.history.pushState({ type, id: item.id }, '', href);
+      pushedIdRef.current = item.id;
+    }
     const prevTitle = document.title;
     document.title = `${titleOf(item)} - JustFlixMovies`;
 
-    const onPop = () => close();
+    const onPop = () => {
+      // Our entry was popped by a navigation (Back button or history.back()).
+      pushedIdRef.current = null;
+      close();
+    };
     window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('popstate', onPop);
@@ -51,6 +66,16 @@ export default function PlayerModal() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id]);
+
+  // Close button / overlay: undo the pushed history entry so the URL returns to
+  // where it was before the modal opened. popstate then drives the actual close.
+  const dismiss = useCallback(() => {
+    if (pushedIdRef.current !== null) {
+      window.history.back();
+    } else {
+      close();
+    }
+  }, [close]);
 
   // ---- Typewriter ----
   const clearTimers = useCallback(() => {
@@ -188,7 +213,7 @@ export default function PlayerModal() {
 
   return (
     <div className={`modal show`} id="modal">
-      <button className="close-button" onClick={close} aria-label="Close">
+      <button className="close-button" onClick={dismiss} aria-label="Close">
         &times;
       </button>
       <div className={`modal-content ${isTV ? 'is-tv-modal' : 'is-movie-modal'}`}>

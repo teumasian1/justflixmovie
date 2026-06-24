@@ -24,47 +24,6 @@ export const metadata: Metadata = {
   alternates: { canonical: '/home' },
 };
 
-// FAQPage schema — mirrors the visible FAQ below so the Q&A can show as a rich
-// result. Google requires the structured data to match the on-page text.
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'Where can I watch free movies online?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'JustFlixMovies lets you watch free movies online in HD with no sign-up. It is one of the easiest sites for watching free movies and TV shows instantly in your browser.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'What are some good movies to watch right now?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Check the Trending Movies and Popular TV Shows rows on this page for good movies to watch this week, updated daily.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'Is there a website to watch movies for free without registration?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Yes. JustFlixMovies is a free website to watch movies for free — no account, no subscription, just free full movies and shows in HD.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'What are good family movies to watch together?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Browse our family movies to watch collection for the best movie to watch with family, from animated films to all-ages classics.',
-      },
-    },
-  ],
-};
-
 export default async function HomePage() {
   // Fetch all rows server-side in parallel. A failed row degrades to empty
   // instead of breaking the page.
@@ -100,75 +59,6 @@ export default async function HomePage() {
         <Row title="Korean Dramas & K-Series" items={kdramaRow} />
       </div>
 
-      <section className="seo-content" aria-label="About JustFlixMovies">
-        <h2>Watch Free Movies Online in HD</h2>
-        <p>
-          JustFlixMovies is your go-to destination to <strong>watch free movies online</strong> in{' '}
-          <strong>HD</strong> quality. If you have been searching for a{' '}
-          <strong>website to watch movies for free</strong>, you have found one of the best{' '}
-          <strong>sites for watching free movies</strong> — no registration, no subscription, and{' '}
-          <strong>free full movies</strong> ready to stream instantly. Our platform brings together a
-          massive collection of <strong>trending movies</strong>, popular <strong>TV shows</strong>,{' '}
-          <strong>anime series</strong>, and <strong>Korean dramas</strong>, so there is always
-          something good to watch.
-        </p>
-
-        <h2>Good Movies to Watch — Across Every Genre</h2>
-        <p>
-          Looking for <strong>good movies to watch</strong> tonight? Our library is updated daily
-          across every genre — horror for a scare, comedy for a laugh, timeless classics, and
-          feel-good films for a lazy weekend. Whatever you are in the mood for, you can{' '}
-          <strong>watch movies online free</strong> here in HD. Use our genre, year, and country
-          filters to find exactly the right title.
-        </p>
-
-        <h2>Family Movies to Watch Together</h2>
-        <p>
-          Need a <strong>movie to watch with family</strong>? Browse our hand-picked{' '}
-          <strong>family movies to watch</strong> — animated adventures, feel-good comedies, and
-          all-ages classics everyone will enjoy. With thousands of <strong>HD movies</strong> and
-          new titles added every day, JustFlixMovies makes it easy to{' '}
-          <strong>watch free movies online</strong> with the people you love.
-        </p>
-
-        <h2>What Movie Should I Watch?</h2>
-        <p>
-          Not sure <strong>what movie should I watch</strong>? Start with our{' '}
-          <strong>Trending Movies</strong> row above for the most popular picks this week, or open{' '}
-          <a href="/browse">Browse</a> to filter by genre, release year, country, and rating until
-          you find the perfect <strong>movies to watch</strong> right now.
-        </p>
-
-        <h2>Frequently Asked Questions</h2>
-        <dl className="faq">
-          <dt>Where can I watch free movies online?</dt>
-          <dd>
-            JustFlixMovies lets you <strong>watch free movies online</strong> in HD with no sign-up.
-            It is one of the easiest <strong>sites for watching free movies</strong> and TV shows
-            instantly in your browser.
-          </dd>
-          <dt>What are some good movies to watch right now?</dt>
-          <dd>
-            Check the <strong>Trending Movies</strong> and <strong>Popular TV Shows</strong> rows on
-            this page for <strong>good movies to watch</strong> this week, updated daily.
-          </dd>
-          <dt>Is there a website to watch movies for free without registration?</dt>
-          <dd>
-            Yes. JustFlixMovies is a free <strong>website to watch movies for free</strong> — no
-            account, no subscription, just <strong>free full movies</strong> and shows in HD.
-          </dd>
-          <dt>What are good family movies to watch together?</dt>
-          <dd>
-            Browse our <strong>family movies to watch</strong> collection for the best{' '}
-            <strong>movie to watch with family</strong>, from animated films to all-ages classics.
-          </dd>
-        </dl>
-      </section>
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
     </>
   );
 }

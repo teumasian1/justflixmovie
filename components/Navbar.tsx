@@ -2,29 +2,35 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { IMG_URL, type TmdbItem } from '@/lib/tmdb';
 import { useModal } from './ModalContext';
 
-// Navbar: logo, Browse link, live multi-search (via /api/tmdb proxy), theme
-// toggle. Ported from the navbar + search logic in home.js.
+// Navbar: logo, Browse link, live multi-search (via /api/tmdb proxy), and the
+// 5-agent theme picker. Ported from the navbar + search logic in home.js.
 
 export default function Navbar() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TmdbItem[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [clock, setClock] = useState('--:--:--');
   const containerRef = useRef<HTMLDivElement>(null);
   const { open } = useModal();
   const router = useRouter();
+  const pathname = usePathname();
 
-  // Theme: persisted in localStorage, applied to <html data-theme>.
-  const toggleTheme = () => {
-    const current = localStorage.getItem('theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-  };
+  // The welcome landing (/) has its own large hero search, so the compact
+  // navbar search is redundant there — hide it on that route only.
+  const showSearch = pathname !== '/';
+
+  // Live HUD clock for the navbar ID rail.
+  useEffect(() => {
+    const tick = () => setClock(new Date().toLocaleTimeString('en-GB', { hour12: false }));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Debounced search as the user types.
   useEffect(() => {
@@ -62,6 +68,9 @@ export default function Navbar() {
   return (
     <>
       <header className="navbar">
+        <div className="nav-idrail" aria-hidden="true">
+          JUSTFLIX // FREE_STREAM_TERMINAL // <b>{clock}</b>
+        </div>
         <Link href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/lulu.png" alt="JustFlixMovies" width={81} height={54} style={{ cursor: 'pointer' }} id="logo" />
@@ -70,38 +79,36 @@ export default function Navbar() {
           <button className="browse-btn" onClick={() => router.push('/browse')}>
             Browse <i className="fas fa-film" />
           </button>
-          <div
-            ref={containerRef}
-            role="search"
-            className={`search-container ${mobileOpen ? 'is-open' : ''}`}
-          >
-            <button
-              className="search-toggle"
-              type="button"
-              aria-label="Open search"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMobileOpen((v) => !v);
-              }}
+          {showSearch && (
+            <div
+              ref={containerRef}
+              role="search"
+              className={`search-container ${mobileOpen ? 'is-open' : ''}`}
             >
-              <i className="fas fa-search" />
-            </button>
-            <input
-              type="text"
-              className="search-bar"
-              placeholder="Search..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-            <i className="fas fa-moon dark-icon" />
-            <i className="fas fa-sun light-icon" />
-          </button>
+              <button
+                className="search-toggle"
+                type="button"
+                aria-label="Open search"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileOpen((v) => !v);
+                }}
+              >
+                <i className="fas fa-search" />
+              </button>
+              <input
+                type="text"
+                className="search-bar"
+                placeholder="Search..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          )}
         </nav>
       </header>
 
-      {results !== null && (
+      {showSearch && results !== null && (
         <div className="search-results-container" style={{ display: 'block' }}>
           <div className="browse-grid" id="navbar-search-results">
             {searching && (

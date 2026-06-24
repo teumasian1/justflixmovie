@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import type { TmdbItem } from '@/lib/tmdb';
 import PosterCard from './PosterCard';
 
@@ -10,6 +10,28 @@ import PosterCard from './PosterCard';
 export default function Row({ title, items }: { title: string; items: TmdbItem[] }) {
   const listRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
+
+  // Brutalist "boot-up" reveal: stagger-flash the cards' red border the first
+  // time the row scrolls into view. Honour reduced-motion by skipping it.
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            el.classList.add('booted');
+            io.disconnect();
+          }
+        });
+      },
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const scrollByDir = (dir: -1 | 1) => {
     const el = listRef.current;

@@ -35,12 +35,32 @@ export default function PosterCard({ item }: { item: TmdbItem }) {
     launchFromPoster(ref.current, (typeDelay) => open(item, { typeDelay }));
   };
 
+  // Magnetic pull: the card nudges a few px toward the cursor on hover.
+  const handleMagnet = (e: MouseEvent<HTMLAnchorElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const r = el.getBoundingClientRect();
+    const dx = ((e.clientX - r.left) / r.width - 0.5) * 6;
+    const dy = ((e.clientY - r.top) / r.height - 0.5) * 6;
+    el.style.setProperty('--mx', `${dx.toFixed(1)}px`);
+    el.style.setProperty('--my', `${dy.toFixed(1)}px`);
+  };
+  const resetMagnet = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty('--mx', '0px');
+    el.style.setProperty('--my', '0px');
+  };
+
   return (
     <a
       ref={ref}
       href={href}
       className={`poster-container ${loaded ? 'loaded' : 'loading'}`}
       onClick={handleClick}
+      onMouseMove={handleMagnet}
+      onMouseLeave={resetMagnet}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

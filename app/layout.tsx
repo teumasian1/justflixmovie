@@ -4,6 +4,7 @@ import { ModalProvider } from '@/components/ModalContext';
 import Navbar from '@/components/Navbar';
 import PlayerModal from '@/components/PlayerModal';
 import Popunder from '@/components/Popunder';
+import SystemChrome from '@/components/SystemChrome';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
 
@@ -57,7 +58,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#160a1f',
+  themeColor: '#000000',
 };
 
 // WebSite schema → enables the brand name + sitelinks search box in results.
@@ -69,7 +70,7 @@ const websiteJsonLd = {
   url: SITE_URL,
   potentialAction: {
     '@type': 'SearchAction',
-    target: `${SITE_URL}/?q={search_term_string}`,
+    target: `${SITE_URL}/search?q={search_term_string}`,
     'query-input': 'required name=search_term_string',
   },
 };
@@ -85,9 +86,6 @@ const organizationJsonLd = {
     'Watch free movies and TV shows online in HD. Trending movies, TV series, anime, and Korean dramas — no registration required.',
 };
 
-// Set the persisted theme before first paint to avoid a flash.
-const themeScript = `(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -96,7 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
           rel="stylesheet"
         />
         {/*
@@ -126,7 +124,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           />
         </noscript>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
@@ -146,6 +143,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main id="main-content">{children}</main>
           <Footer />
           <PlayerModal />
+          <SystemChrome />
         </ModalProvider>
       </body>
     </html>

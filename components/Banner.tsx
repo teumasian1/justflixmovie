@@ -9,6 +9,7 @@ import { useModal } from './ModalContext';
 
 export default function Banner({ items }: { items: TmdbItem[] }) {
   const [index, setIndex] = useState(0);
+  const [clock, setClock] = useState('--:--:--');
   const { open } = useModal();
 
   const slides = items.filter((i) => i.backdrop_path);
@@ -19,6 +20,14 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
     return () => clearInterval(id);
   }, [slides.length]);
 
+  // Live HUD clock for the hero telemetry readout.
+  useEffect(() => {
+    const tick = () => setClock(new Date().toLocaleTimeString('en-GB', { hour12: false }));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   if (slides.length === 0) return <div className="banner" id="banner" />;
 
   const item = slides[index];
@@ -26,6 +35,9 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
   const dateStr = item.release_date || item.first_air_date;
   const year = dateStr ? new Date(dateStr).getFullYear() : null;
   const isTV = item.media_type === 'tv' || (!item.title && !!item.name) || !!item.first_air_date;
+  // Deterministic pseudo-coordinates derived from the item id (fake telemetry).
+  const lat = (((item.id % 18000) / 100) - 90).toFixed(2);
+  const lon = (((item.id % 36000) / 100) - 180).toFixed(2);
 
   return (
     <div
@@ -33,8 +45,9 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
       id="banner"
       style={{ backgroundImage: `url(${BACKDROP_URL}${item.backdrop_path})` }}
     >
+      <div className="banner-scan" aria-hidden="true" />
       <div className="banner-content">
-        <span className="banner-kicker">Featured</span>
+        <span className="banner-kicker"><span className="kicker-type">Featured</span></span>
         <h1 id="banner-title">{title}</h1>
         <p id="banner-overview">{item.overview}</p>
         <div className="banner-meta" id="banner-meta">
@@ -56,6 +69,10 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
             <i className="fas fa-info-circle" /> More Info
           </button>
         </div>
+      </div>
+      <div className="banner-telemetry" aria-hidden="true">
+        LAT <b>{lat}</b> // LON <b>{lon}</b><br />
+        FEED <b>{String(index + 1).padStart(2, '0')}/{String(slides.length).padStart(2, '0')}</b> // <b>{clock}</b>
       </div>
     </div>
   );

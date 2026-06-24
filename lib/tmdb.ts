@@ -142,3 +142,16 @@ export function discover(
 ) {
   return tmdb<TmdbList>(`/discover/${type}`, params, 60 * 60);
 }
+
+// ---- Search ----
+// Server-side multi-search (movies + TV + people). Used by the /search results
+// page. People and result-less entries are filtered out; we keep only titles
+// with a poster so the grid renders cleanly. Cached for an hour like browse.
+export async function searchMulti(query: string): Promise<TmdbItem[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const data = await tmdb<TmdbList>('/search/multi', { query: q }, 60 * 60);
+  return (data.results || [])
+    .filter((i) => i.media_type !== ('person' as MediaType) && i.poster_path)
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+}

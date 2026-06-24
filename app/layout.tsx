@@ -14,14 +14,14 @@ export const metadata: Metadata = {
   // every other page's title (e.g. "Browse …" -> "Browse … | JustFlixMovies").
   // Detail pages opt out via title.absolute since they already include the brand.
   title: {
-    default: 'JustFlixMovies - Watch Free Movies & TV Shows Online in HD',
+    default: 'Watch Free Movies & TV Shows Online in HD - JustFlixMovies',
     template: '%s | JustFlixMovies',
   },
   applicationName: 'JustFlixMovies',
   description:
-    'Watch free movies and TV shows online in HD. Stream trending movies, popular TV series, anime, and Korean dramas — no registration required.',
+    'Watch free movies and TV shows online in HD on JustFlixMovies. Stream trending films, popular series, anime, and Korean dramas instantly — no sign-up, no subscription.',
   keywords:
-    'movies to watch, good movies to watch, movies to watch on netflix, watch free movies, watch free movies online, what movie should i watch, watch movies online free, website to watch movies for free, fun movies to watch, great movies to watch, horror movies to watch, sites for watching free movies, classic movies to watch, comedy movies to watch, family movies to watch, movie to watch with family, hd movies, free full movies, tv shows, anime, korean drama, trending movies',
+    'watch free movies online, free movies online, watch movies online free, free movies in HD, watch tv shows online free, stream movies free, watch free movies without registration, free anime online, watch korean drama online, trending movies, JustFlixMovies',
   authors: [{ name: 'JustFlixMovies' }],
   creator: 'JustFlixMovies',
   publisher: 'JustFlixMovies',
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'JustFlixMovies',
-    title: 'JustFlixMovies - Watch Free Movies & TV Shows Online in HD',
+    title: 'Watch Free Movies & TV Shows Online in HD - JustFlixMovies',
     description:
-      'Watch free movies and TV shows online in HD quality. Stream trending movies, popular TV series, anime, and Korean dramas.',
+      'Stream free movies, TV series, anime, and Korean dramas online in HD — no sign-up, no subscription. Press play and watch instantly on JustFlixMovies.',
     url: SITE_URL,
     // Declare the real dimensions of the OG image (lulu.png is 1536×1024) so
     // social platforms render the card without a reflow/refetch.
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'JustFlixMovies - Watch Free Movies & TV Shows',
+    title: 'Watch Free Movies & TV Shows Online in HD - JustFlixMovies',
     description:
-      'Watch free movies and TV shows online in HD. Stream trending movies, anime, K-dramas, and more.',
+      'Stream free movies, TV series, anime, and K-dramas in HD — no sign-up, no subscription. Watch instantly on JustFlixMovies.',
     images: [{ url: '/lulu.png', width: 1536, height: 1024 }],
   },
 };

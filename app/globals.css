@@ -1182,7 +1182,22 @@ body, button, input, select, textarea {
   transition: all 0.18s ease;
 }
 .copy-link-btn:hover { border-color: var(--accent); color: var(--accent); }
-.copy-link-btn.copied { border-color: var(--accent); color: var(--accent); }
+.copy-link-btn.copied {
+  border-color: var(--accent); color: var(--accent);
+  animation: copyPop 0.36s var(--ease-out);
+}
+/* The icon swaps to a check on copy — flash it in with a spring. */
+.copy-link-btn.copied i { animation: copyCheck 0.4s var(--ease-out); }
+@keyframes copyPop {
+  0%   { transform: scale(1); box-shadow: none; }
+  40%  { transform: scale(1.07); box-shadow: var(--neon-glow); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+@keyframes copyCheck {
+  0%   { transform: scale(0.3) rotate(-14deg); opacity: 0.3; }
+  55%  { transform: scale(1.3) rotate(0); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
 
 .server-btn {
   padding: 7px 15px;

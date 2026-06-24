@@ -52,6 +52,18 @@ export default function Browse() {
       if (genre) params.set('with_genres', genre);
       if (year) params.set('year', year);
       if (country) params.set('with_origin_country', country);
+      // Hide titles with no stream yet. For movies that means two things: a
+      // release date that has already passed (no upcoming films), AND a release
+      // that is digital/physical/TV (type 4|5|6) — i.e. actually out for home
+      // streaming, not theatrical-only titles (type 2|3) still only in cinemas.
+      // TV just needs to have aired (first air date on or before today).
+      const today = new Date().toISOString().slice(0, 10);
+      if (type === 'movie') {
+        params.set('release_date.lte', today);
+        params.set('with_release_type', '4|5|6');
+      } else {
+        params.set('first_air_date.lte', today);
+      }
       const res = await fetch(`/api/tmdb/discover/${type}?${params.toString()}`);
       const data = await res.json();
       setTotalPages(Math.ceil((data.total_results || 0) / ITEMS_PER_PAGE));

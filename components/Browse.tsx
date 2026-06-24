@@ -50,7 +50,11 @@ export default function Browse() {
     try {
       const params = new URLSearchParams({ page: String(page), sort_by: sort });
       if (genre) params.set('with_genres', genre);
-      if (year) params.set('year', year);
+      // Year must use the right per-type param: movies filter by their primary
+      // release year, TV by first-air year. (The generic `year` param matches any
+      // release date for movies and does nothing at all for TV — which let titles
+      // from other years slip through.)
+      if (year) params.set(type === 'movie' ? 'primary_release_year' : 'first_air_date_year', year);
       if (country) params.set('with_origin_country', country);
       // Hide titles with no stream yet. For movies that means two things: a
       // release date that has already passed (no upcoming films), AND a release

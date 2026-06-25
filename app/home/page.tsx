@@ -7,6 +7,7 @@ import {
   BACKDROP_URL,
   type TmdbItem,
 } from '@/lib/tmdb';
+import { buildItemListJsonLd } from '@/lib/detail';
 import Banner from '@/components/Banner';
 import Row from '@/components/Row';
 import WatchHistoryRow from '@/components/WatchHistoryRow';
@@ -14,7 +15,8 @@ import WatchHistoryRow from '@/components/WatchHistoryRow';
 // Curated list page: the banner slideshow + trending rows. Reachable from the
 // welcome landing (/) via the "Browse the curated list" call-to-action.
 // Rendered at the edge so crawlers and the first visitor get fully-rendered
-// content (rows + banner) in the initial HTML.
+// content (rows + banner) in the initial HTML, plus an ItemList covering the
+// top titles so Google can render a carousel rich result.
 export const runtime = 'edge';
 export const revalidate = 3600;
 
@@ -50,6 +52,11 @@ export default async function HomePage() {
     preload(`${BACKDROP_URL}${lcpBackdrop}`, { as: 'image', fetchPriority: 'high' });
   }
 
+  // ItemList over the trending movies — the headline row. Capped at 30 entries
+  // by buildItemListJsonLd. This covers the top titles for the carousel rich
+  // result; the visible rows below carry the rest as crawlable <a> links.
+  const itemList = buildItemListJsonLd(movieRow, 'Trending Movies & TV Shows');
+
   return (
     <>
       <div style={{ display: 'block' }}>
@@ -60,7 +67,10 @@ export default async function HomePage() {
         <Row title="Watch Free Anime Online" items={animeRow} />
         <Row title="Korean Dramas & K-Series" items={kdramaRow} />
       </div>
-
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
+      />
     </>
   );
 }

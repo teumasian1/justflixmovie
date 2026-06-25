@@ -1,22 +1,86 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { discover } from '@/lib/tmdb';
+import type { TmdbItem } from '@/lib/tmdb';
+import {
+  filtersFromParams,
+  discoverParams,
+  filtersLabel,
+  ITEMS_PER_PAGE,
+} from '@/lib/browse';
+import { buildItemListJsonLd } from '@/lib/detail';
 import Browse from '@/components/Browse';
 
-export const metadata: Metadata = {
-  // Root layout's template appends " | JustFlixMovies" (~17 chars), so keep the
-  // base short enough that the full title stays under ~60 chars in SERPs.
-  title: 'Browse Movies & TV Shows by Genre & Year',
-  description:
-    'Browse and filter free movies and TV shows by genre, release year, country, and popularity. Stream in HD with no registration on JustFlixMovies.',
-  alternates: { canonical: '/browse' },
-};
+// Server-rendered browse. The first page of discover results is fetched on the
+// edge so crawlers get crawlable poster <a> links + an ItemList in the initial
+// HTML, and the first paint shows results instead of a spinner. The client
+// <Browse> then hydrates against that seed and re-fetches only when a filter or
+// page actually changes.
 
-export default function BrowsePage() {
-  // Suspense boundary required because <Browse> reads useSearchParams() during
-  // render (Next.js opts the page into client-side search-param rendering).
+export const runtime = 'edge';
+export const revalidate = 3600;
+
+// Dynamic metadata keyed to the active filters — each filter combination gets a
+// descriptive title (e.g. "Popular Action Movies of 2024"), so genre/year
+// landing pages are distinct indexable URLs rather than one generic /browse.
+type Sp = { searchParams: Record<string, string | string[] | undefined> };
+
+export function generateMetadata({ searchParams }: Sp): Metadata {
+  // normalize searchParams (Next may hand us arrays for repeated keys)
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(searchParams)) {
+    if (typeof v === 'string') sp.set(k, v);
+    else if (Array.isArray(v) && v[0]) sp.set(k, v[0]);
+  }
+  const f = filtersFromParams(sp);
+  const label = filtersLabel(f);
+  return {
+    title: `${label} — Watch Free Online`,
+    description: `${label} available to stream free in HD on JustFlixMovies — no sign-up, no subscription. Filter by genre, year, country, and rating.`,
+    alternates: { canonical: '/browse' },
+  };
+}
+
+export default async function BrowsePage({ searchParams }: Sp) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(searchParams)) {
+    if (typeof v === 'string') sp.set(k, v);
+    else if (Array.isArray(v) && v[0]) sp.set(k, v[0]);
+  }
+  const filters = filtersFromParams(sp);
+  const label = filtersLabel(filters);
+
+  // Fetch the first page on the server. A failure degrades to an empty seed —
+  // the client component will retry via the proxy.
+  let items: TmdbItem[] = [];
+  let totalPages = 0;
+  try {
+    const data = await discover(filters.type, discoverParams(filters));
+    items = (data.results || []).slice(0, ITEMS_PER_PAGE);
+    totalPages = Math.ceil((data.total_results || 0) / ITEMS_PER_PAGE);
+  } catch {
+    /* empty seed; client will refetch */
+  }
+
+  const itemList = buildItemListJsonLd(
+    items.map((i) => ({ ...i, media_type: filters.type })),
+    label
+  );
+
   return (
-    <Suspense fallback={<div className="loading-spinner" style={{ display: 'flex' }}><div className="spinner" /></div>}>
-      <Browse />
-    </Suspense>
+    <>
+      <h1 className="browse-page-title" style={{ padding: '0 4%', marginTop: '2rem' }}>
+        {label}
+      </h1>
+      <Suspense
+        fallback={<div className="loading-spinner" style={{ display: 'flex' }}><div className="spinner" /></div>}
+      >
+        <Browse initial={{ items, totalPages, filters }} />
+      </Suspense>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
+      />
+    </>
   );
 }

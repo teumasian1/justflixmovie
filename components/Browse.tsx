@@ -3,81 +3,81 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { TmdbItem, MediaType } from '@/lib/tmdb';
+import {
+  GENRES,
+  COUNTRIES,
+  SORTS,
+  ITEMS_PER_PAGE,
+  discoverParams,
+  type BrowseFilters,
+} from '@/lib/browse';
 import PosterCard from './PosterCard';
 
 // Browse view with genre/year/country/sort filters + pagination, ported from
 // js/browse.js. Discover requests go through the /api/tmdb proxy. Initial filter
 // values are read from the URL (?type=tv&genre=28 …) so links from the footer
 // or elsewhere can deep-link straight into a filtered view.
+//
+// SSR seeding: the server page (app/browse/page.tsx) fetches the first page of
+// results and passes them in as `initial` so (a) crawlers get crawlable HTML
+// + an ItemList without executing JS, and (b) the first paint shows results
+// immediately instead of a spinner-then-refetch. On any filter/page change we
+// re-fetch through the proxy as normal.
 
-const GENRES = [
-  ['', 'All Genres'], ['28', 'Action'], ['12', 'Adventure'], ['16', 'Animation'],
-  ['35', 'Comedy'], ['80', 'Crime'], ['99', 'Documentary'], ['18', 'Drama'],
-  ['10751', 'Family'], ['14', 'Fantasy'], ['36', 'History'], ['27', 'Horror'],
-  ['10402', 'Music'], ['9648', 'Mystery'], ['10749', 'Romance'],
-  ['878', 'Science Fiction'], ['53', 'Thriller'],
-];
-const COUNTRIES = [
-  ['', 'All Countries'], ['US', 'United States'], ['GB', 'United Kingdom'],
-  ['FR', 'France'], ['DE', 'Germany'], ['IT', 'Italy'], ['ES', 'Spain'],
-  ['JP', 'Japan'], ['KR', 'South Korea'], ['IN', 'India'], ['CN', 'China'],
-];
-const SORTS = [
-  ['popularity.desc', 'Popularity'],
-  ['vote_average.desc', 'Rating'],
-  ['release_date.desc', 'Release Date'],
-];
-const ITEMS_PER_PAGE = 36;
+interface InitialData {
+  items: TmdbItem[];
+  totalPages: number;
+  filters: BrowseFilters;
+}
 
-export default function Browse() {
+export default function Browse({
+  initial,
+}: {
+  initial?: InitialData;
+}) {
   // Read initial filters from the URL so the page is deep-linkable
   // (e.g. footer "Watch TV Shows" → /browse?type=tv).
   const searchParams = useSearchParams();
   const router = useRouter();
   const [type, setType] = useState<MediaType>(
-    (searchParams.get('type') as MediaType) === 'tv' ? 'tv' : 'movie'
+    initial?.filters.type ??
+      ((searchParams.get('type') as MediaType) === 'tv' ? 'tv' : 'movie')
   );
-  const [genre, setGenre] = useState(searchParams.get('genre') || '');
-  const [year, setYear] = useState(searchParams.get('year') || '');
-  const [country, setCountry] = useState(searchParams.get('country') || '');
-  const [sort, setSort] = useState(searchParams.get('sort') || 'popularity.desc');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [items, setItems] = useState<TmdbItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [genre, setGenre] = useState(initial?.filters.genre ?? (searchParams.get('genre') || ''));
+  const [year, setYear] = useState(initial?.filters.year ?? (searchParams.get('year') || ''));
+  const [country, setCountry] = useState(
+    initial?.filters.country ?? (searchParams.get('country') || '')
+  );
+  const [sort, setSort] = useState(
+    initial?.filters.sort ?? (searchParams.get('sort') || 'popularity.desc')
+  );
+  const [page, setPage] = useState(initial?.filters.page ?? 1);
+  const [totalPages, setTotalPages] = useState(initial?.totalPages ?? 0);
+  const [items, setItems] = useState<TmdbItem[]>(initial?.items ?? []);
+  const [loading, setLoading] = useState(!initial);
+
+  const seededKey = initial
+    ? `${initial.filters.type}|${initial.filters.genre}|${initial.filters.year}|${initial.filters.country}|${initial.filters.sort}|${initial.filters.page}`
+    : '';
+  const currentKey = `${type}|${genre}|${year}|${country}|${sort}|${page}`;
+  // If the live filters still match the SSR-seeded view, we already have the
+  // data — skip the first fetch entirely (avoids a duplicate request).
+  const skipNext = !!initial && seededKey === currentKey;
 
   const years = [
     ['', 'All Years'],
     ...Array.from({ length: 101 }, (_, i) => {
       const y = String(new Date().getFullYear() - i);
-      return [y, y];
+      return [y, y] as [string, string];
     }),
   ];
 
   const fetchContent = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), sort_by: sort });
-      if (genre) params.set('with_genres', genre);
-      // Year must use the right per-type param: movies filter by their primary
-      // release year, TV by first-air year. (The generic `year` param matches any
-      // release date for movies and does nothing at all for TV — which let titles
-      // from other years slip through.)
-      if (year) params.set(type === 'movie' ? 'primary_release_year' : 'first_air_date_year', year);
-      if (country) params.set('with_origin_country', country);
-      // Hide titles with no stream yet. For movies that means two things: a
-      // release date that has already passed (no upcoming films), AND a release
-      // that is digital/physical/TV (type 4|5|6) — i.e. actually out for home
-      // streaming, not theatrical-only titles (type 2|3) still only in cinemas.
-      // TV just needs to have aired (first air date on or before today).
-      const today = new Date().toISOString().slice(0, 10);
-      if (type === 'movie') {
-        params.set('release_date.lte', today);
-        params.set('with_release_type', '4|5|6');
-      } else {
-        params.set('first_air_date.lte', today);
-      }
-      const res = await fetch(`/api/tmdb/discover/${type}?${params.toString()}`);
+      const params = discoverParams({ type, genre, year, country, sort, page });
+      const qs = new URLSearchParams(params).toString();
+      const res = await fetch(`/api/tmdb/discover/${type}?${qs}`);
       const data = await res.json();
       setTotalPages(Math.ceil((data.total_results || 0) / ITEMS_PER_PAGE));
       setItems((data.results || []).slice(0, ITEMS_PER_PAGE));
@@ -87,8 +87,10 @@ export default function Browse() {
   }, [type, genre, year, country, sort, page]);
 
   useEffect(() => {
+    if (skipNext) return;
     fetchContent();
-  }, [fetchContent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchContent, skipNext]);
 
   // Keep the URL in sync with the active filters so the current view is
   // shareable/bookmarkable. Skips empty values to keep it tidy.

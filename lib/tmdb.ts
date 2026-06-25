@@ -30,7 +30,61 @@ export interface TmdbItem {
   media_type?: MediaType;
   runtime?: number;
   number_of_seasons?: number;
+  number_of_episodes?: number;
+  status?: string;
+  tagline?: string;
+  homepage?: string;
+  production_companies?: { id: number; name: string }[];
+  spoken_languages?: { english_name: string }[];
   seasons?: TmdbSeason[];
+  // Populated by getDetailsEnriched() via append_to_response=credits,videos,
+  // release_dates/content_ratings. Present on detail responses only.
+  credits?: TmdbCredits;
+  videos?: { results: TmdbVideo[] };
+  release_dates?: { results: TmdbReleaseDates[] };
+  content_ratings?: { results: TmdbContentRating[] };
+}
+
+export interface TmdbCredits {
+  cast: TmdbCastMember[];
+  crew: TmdbCrewMember[];
+}
+
+export interface TmdbCastMember {
+  id: number;
+  name: string;
+  character?: string;
+  order?: number;
+  profile_path?: string | null;
+}
+
+export interface TmdbCrewMember {
+  id: number;
+  name: string;
+  job?: string;
+  department?: string;
+  profile_path?: string | null;
+}
+
+export interface TmdbVideo {
+  id: string;
+  key: string;
+  site: string;
+  type: string;
+  official?: boolean;
+  name?: string;
+}
+
+// TMDB release_dates (movies): per-country entries with a certification + type.
+export interface TmdbReleaseDates {
+  iso_3166_1: string;
+  release_dates: { certification: string; type: number }[];
+}
+
+// TMDB content_ratings (TV): per-country maturity rating strings.
+export interface TmdbContentRating {
+  iso_3166_1: string;
+  rating: string;
 }
 
 export interface TmdbSeason {
@@ -111,6 +165,29 @@ export async function getTrendingKDramas(): Promise<TmdbItem[]> {
 // ---- Detail ----
 export function getDetails(type: MediaType, id: string | number) {
   return tmdb<TmdbItem>(`/${type}/${id}`, {}, 60 * 60 * 24);
+}
+
+// Enriched detail response: a single TMDB request pulls credits, videos, and
+// the maturity rating (release_dates for movies, content_ratings for TV) so the
+// Movie/TVSeries JSON-LD can emit director/actor/trailer/contentRating. Cached
+// 24h like the plain detail fetch.
+export function getDetailsEnriched(type: MediaType, id: string | number) {
+  const append = `credits,videos,${
+    type === 'movie' ? 'release_dates' : 'content_ratings'
+  }`;
+  return tmdb<TmdbItem>(
+    `/${type}/${id}`,
+    { append_to_response: append },
+    60 * 60 * 24
+  );
+}
+
+// "More like this" recommendations for a title. Used by the detail page's
+// related row — also broadens crawlable coverage beyond the sitemap.
+export function getRecommendations(type: MediaType, id: string | number) {
+  return tmdb<TmdbList>(`/${type}/${id}/recommendations`, {}, 60 * 60 * 24)
+    .then((d) => d.results || [])
+    .catch(() => [] as TmdbItem[]);
 }
 
 // ---- Catalog lists (used to build a broad sitemap) ----

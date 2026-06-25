@@ -71,20 +71,126 @@ export function buildDetailMetadata(
   };
 }
 
-// Movie/TVSeries JSON-LD for crawlers.
+// --- JSON-LD helpers ---
+
+// The US maturity rating for a title, sourced from the enriched detail response.
+// Movies carry release_dates (we prefer the digital/home-video release type so
+// we get the rating a streamer would show, not the theatrical one); TV carries
+// content_ratings. Returns undefined if there's no US rating rather than "".
+function usRating(item: TmdbItem, type: MediaType): string | undefined {
+  if (type === 'movie') {
+    const us = (item.release_dates?.results || []).find(
+      (r) => r.iso_3166_1 === 'US'
+    );
+    if (!us) return undefined;
+    // Pick the most relevant release: prefer type 4 (digital) > 5 (physical) >
+    // 6 (TV), the home-viewing categories; fall back to the first available.
+    const rd = us.release_dates || [];
+    const pick =
+      rd.find((r) => r.type === 4 && r.certification) ||
+      rd.find((r) => r.type === 5 && r.certification) ||
+      rd.find((r) => r.type === 6 && r.certification) ||
+      rd.find((r) => r.certification);
+    const c = pick?.certification?.trim();
+    return c || undefined;
+  }
+  const us = (item.content_ratings?.results || []).find(
+    (r) => r.iso_3166_1 === 'US'
+  );
+  const c = us?.rating?.trim();
+  return c || undefined;
+}
+
+// The "official" YouTube trailer key, preferring official+Trailer/Teaser. TMDB
+// returns many video entries (clips, featurettes, foreign dubs); for schema we
+// want the canonical trailer so the rich result links to the right video.
+function trailerKey(item: TmdbItem): string | undefined {
+  const vids = item.videos?.results || [];
+  if (!vids.length) return undefined;
+  const score = (v: { type: string; official?: boolean }) =>
+    (v.official ? 2 : 0) + (v.type === 'Trailer' ? 2 : v.type === 'Teaser' ? 1 : 0);
+  const best = [...vids]
+    .filter((v) => v.site === 'YouTube' && v.key)
+    .sort((a, b) => score(b) - score(a))[0];
+  return best?.key;
+}
+
+// Movie/TVSeries JSON-LD for crawlers. Enriched (when called with the
+// getDetailsEnriched() response) it emits the fields Google's Movie rich result
+// explicitly looks for: director, actor, trailer, contentRating, plus a proper
+// ImageObject for the poster. All enrichment is optional — a plain getDetails()
+// response degrades gracefully to name/description/image/rating as before.
 export function buildJsonLd(type: MediaType, item: TmdbItem, path: string) {
   const title = titleOf(item);
   const poster = item.poster_path ? `${IMG_URL}${item.poster_path}` : '/placeholder.jpg';
+  const url = `${SITE_URL}${path}`;
+
+  // Cast & crew come back as flat arrays; pull out the canonical director(s)
+  // (movies) / creator(s) (TV) and the top-billed cast for schema.
+  const crew = item.credits?.crew || [];
+  const cast = (item.credits?.cast || []).slice(0, 5);
+  const directors =
+    type === 'movie'
+      ? crew.filter((c) => c.job === 'Director')
+      : crew.filter((c) =>
+          ['Creator', 'Series Creator', 'Executive Producer'].includes(c.job || '')
+        );
+
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': type === 'tv' ? 'TVSeries' : 'Movie',
     name: title,
     description: item.overview || `Watch ${title} online free in HD.`,
-    image: poster,
-    url: `${SITE_URL}${path}`,
+    // ImageObject (with explicit dimensions) instead of a bare string: Google
+    // requires this form for the Movie rich result's image eligibility.
+    image: {
+      '@type': 'ImageObject',
+      url: poster,
+      width: 500,
+      height: 750,
+    },
+    url,
     datePublished: item.release_date || item.first_air_date || undefined,
     genre: (item.genres || []).map((g) => g.name),
   };
+
+  // contentRating — only set when we actually resolved a US rating.
+  const rating = usRating(item, type);
+  if (rating) jsonLd.contentRating = rating;
+
+  if (directors.length) {
+    jsonLd[type === 'tv' ? 'creator' : 'director'] = directors.slice(0, 2).map((d) => ({
+      '@type': 'Person',
+      name: d.name,
+      ...(d.profile_path
+        ? { image: `https://image.tmdb.org/t/p/w185${d.profile_path}` }
+        : {}),
+    }));
+  }
+  if (cast.length) {
+    jsonLd.actor = cast.map((c) => ({
+      '@type': 'Person',
+      name: c.name,
+      ...(c.profile_path
+        ? { image: `https://image.tmdb.org/t/p/w185${c.profile_path}` }
+        : {}),
+    }));
+  }
+
+  const key = trailerKey(item);
+  if (key) {
+    jsonLd.trailer = {
+      '@type': 'VideoObject',
+      name: `${title} Trailer`,
+      thumbnailUrl: item.backdrop_path
+        ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}`
+        : poster,
+      contentUrl: `https://www.youtube.com/watch?v=${key}`,
+      uploadDate: item.release_date || item.first_air_date || undefined,
+      embedUrl: `https://www.youtube.com/embed/${key}`,
+    };
+  }
+
   if (item.vote_average && item.vote_count) {
     jsonLd.aggregateRating = {
       '@type': 'AggregateRating',
@@ -95,4 +201,75 @@ export function buildJsonLd(type: MediaType, item: TmdbItem, path: string) {
     };
   }
   return jsonLd;
+}
+
+// BreadcrumbList schema: Home › {Movies|TV Shows} › {Title}. Mirrors the
+// visible breadcrumb so Google can render the breadcrumb trail in the SERP.
+export function buildBreadcrumbJsonLd(
+  type: MediaType,
+  item: TmdbItem,
+  path: string
+) {
+  const title = titleOf(item);
+  const sectionLabel = type === 'tv' ? 'TV Shows' : 'Movies';
+  const sectionPath = type === 'tv' ? '/browse?type=tv' : '/browse?type=movie';
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: sectionLabel,
+        item: `${SITE_URL}${sectionPath}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: title,
+        item: `${SITE_URL}${path}`,
+      },
+    ],
+  };
+}
+
+// ItemList schema for a row/grid of titles. Used by the homepage trending rows
+// and the browse results grid so Google can render a carousel rich result.
+// Each entry points at the title's real detail URL so link equity flows.
+export function buildItemListJsonLd(items: TmdbItem[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: items.length,
+    itemListElement: items
+      .filter((i) => i.poster_path && i.id)
+      .slice(0, 30)
+      .map((item, idx) => {
+        const type: MediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+        const title = titleOf(item);
+        return {
+          '@type': 'ListItem',
+          position: idx + 1,
+          name: title,
+          url: `${SITE_URL}/${type}/${slugifyLocal(title)}-${item.id}`,
+          ...(item.poster_path
+            ? { image: `https://image.tmdb.org/t/p/w500${item.poster_path}` }
+            : {}),
+        };
+      }),
+  };
+}
+
+// Local slugify for the ItemList URL builder (avoids importing buildHref, which
+// returns a relative path; here we already have type + id inline).
+function slugifyLocal(text: string): string {
+  return (text || '')
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 80);
 }

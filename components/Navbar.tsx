@@ -120,8 +120,23 @@ export default function Navbar() {
           JUSTFLIX // FREE_STREAM_TERMINAL // <b>{clock}</b>
         </div>
         <Link href="/">
+          {/*
+            Responsive logo. Rendered at ~81×54 CSS px, so we serve right-sized
+            variants via srcset (96/192/288 = 1x/2x/3x density) instead of the
+            full 1536×1024 source. Cuts the navbar logo download from ~179KB to
+            ~1–4KB. The 96px is the 1x fallback for srcset-unaware browsers.
+          */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/lulu.png" alt="JustFlixMovies" width={81} height={54} style={{ cursor: 'pointer' }} id="logo" />
+          <img
+            src="/lulu-96.png"
+            srcSet="/lulu-96.png 96w, /lulu-192.png 192w, /lulu-288.png 288w"
+            sizes="84px"
+            alt="JustFlixMovies"
+            width={81}
+            height={54}
+            style={{ cursor: 'pointer' }}
+            id="logo"
+          />
         </Link>
         <nav className="nav-links">
           <Link href="/home" className={pathname === '/home' ? 'active' : ''}>

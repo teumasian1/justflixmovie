@@ -37,7 +37,16 @@ export const metadata: Metadata = {
   // you can verify the domain and submit the sitemap).
   verification: { google: 'jrk3yYrSslYrfXTXmEpH3QDLLQ7IwNRTWOGh-lkqpJE' },
   manifest: '/manifest.json',
-  icons: { icon: '/lulu.png', apple: '/lulu.png' },
+  // Favicon + apple-touch: serve right-sized PNGs (32/192px) instead of the
+  // 1536×1024 / 179KB source the browsers would otherwise downscale on every
+  // visit. The full lulu.png is kept only for the OG/social image below.
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+  },
   openGraph: {
     type: 'website',
     siteName: 'JustFlixMovies',

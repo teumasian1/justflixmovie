@@ -1,7 +1,8 @@
+import Link from 'next/link';
 import type { TmdbItem, MediaType } from '@/lib/tmdb';
 import { IMG_URL } from '@/lib/tmdb';
 import { titleOf, yearOf } from '@/lib/slug';
-import { runtimeLabel, buildJsonLd, buildBreadcrumbJsonLd } from '@/lib/detail';
+import { runtimeLabel, buildJsonLd, buildBreadcrumbJsonLd, buildItemListJsonLd } from '@/lib/detail';
 import Row from './Row';
 import AutoOpen from './AutoOpen';
 
@@ -31,6 +32,10 @@ export default function DetailView({
   const genres = (item.genres || []).map((g) => g.name).join(', ');
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const typeLabel = type === 'tv' ? 'TV Series' : 'Movie';
+  // Visible breadcrumb mirrors buildBreadcrumbJsonLd so the structured data
+  // matches on-page content (Google Rich Results requirement). Home › Section › Title.
+  const sectionLabel = type === 'tv' ? 'TV Shows' : 'Movies';
+  const sectionPath = type === 'tv' ? '/browse?type=tv' : '/browse?type=movie';
   const metaLine = [typeLabel, genres, rating ? `⭐ ${rating}/10` : '', runtimeLabel(item, type)]
     .filter(Boolean)
     .join(' · ');
@@ -40,6 +45,11 @@ export default function DetailView({
     .filter((r) => r.poster_path && r.id !== item.id)
     .slice(0, 18)
     .map((r) => ({ ...r, media_type: type }));
+
+  // ItemList over the "More Like This" recommendations: gives Google another
+  // carousel signal and reinforces the semantic relationship between titles.
+  // Only emit when there's at least one related title (empty ItemList is noise).
+  const relatedList = relatedItems.length > 0 ? buildItemListJsonLd(relatedItems, `More Like ${title}`) : null;
 
   return (
     <>
@@ -53,7 +63,26 @@ export default function DetailView({
           __html: JSON.stringify(buildBreadcrumbJsonLd(type, item, path)),
         }}
       />
+      {relatedList && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(relatedList) }}
+        />
+      )}
       <section className="detail-seo" aria-label={`${title} details`}>
+        <nav className="breadcrumb" aria-label="Breadcrumb">
+          <ol className="breadcrumb-list">
+            <li className="breadcrumb-item">
+              <Link href="/">Home</Link>
+            </li>
+            <li className="breadcrumb-item">
+              <Link href={sectionPath}>{sectionLabel}</Link>
+            </li>
+            <li className="breadcrumb-item" aria-current="page">
+              {title}
+            </li>
+          </ol>
+        </nav>
         <div className="detail-seo-inner">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

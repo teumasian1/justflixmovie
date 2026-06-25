@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { TmdbItem, MediaType } from './tmdb';
 import { IMG_URL } from './tmdb';
-import { titleOf, yearOf } from './slug';
+import { titleOf, yearOf, buildHref } from './slug';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
 
@@ -236,7 +236,9 @@ export function buildBreadcrumbJsonLd(
 
 // ItemList schema for a row/grid of titles. Used by the homepage trending rows
 // and the browse results grid so Google can render a carousel rich result.
-// Each entry points at the title's real detail URL so link equity flows.
+// Each entry points at the title's real detail URL (via the same buildHref()
+// the rest of the app uses) so link equity flows and the JSON-LD URLs can never
+// drift from the live <a> links.
 export function buildItemListJsonLd(items: TmdbItem[], listName: string) {
   return {
     '@context': 'https://schema.org',
@@ -253,23 +255,11 @@ export function buildItemListJsonLd(items: TmdbItem[], listName: string) {
           '@type': 'ListItem',
           position: idx + 1,
           name: title,
-          url: `${SITE_URL}/${type}/${slugifyLocal(title)}-${item.id}`,
+          url: `${SITE_URL}${buildHref(type, { id: item.id, title: item.title, name: item.name })}`,
           ...(item.poster_path
             ? { image: `https://image.tmdb.org/t/p/w500${item.poster_path}` }
             : {}),
         };
       }),
   };
-}
-
-// Local slugify for the ItemList URL builder (avoids importing buildHref, which
-// returns a relative path; here we already have type + id inline).
-function slugifyLocal(text: string): string {
-  return (text || '')
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .substring(0, 80);
 }

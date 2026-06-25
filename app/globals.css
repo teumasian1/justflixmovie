@@ -552,6 +552,32 @@ body, button, input, select, textarea {
   padding: clamp(96px, 12vh, 150px) clamp(16px, 5vw, 64px) clamp(32px, 5vw, 56px);
   max-width: 1100px;
 }
+
+/* Visible breadcrumb — mirrors the BreadcrumbList JSON-LD so the structured
+   data matches on-page content (Google Rich Results requirement). */
+.breadcrumb { margin-bottom: clamp(20px, 3vw, 32px); }
+.breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45em;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.breadcrumb-item { display: flex; align-items: center; gap: 0.45em; }
+.breadcrumb-item a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.breadcrumb-item a:hover { color: var(--accent-2); }
+/* Separator between items — styled via ::after so the last (current) item has none. */
+.breadcrumb-item:not(:last-child)::after { content: '›'; color: var(--accent); margin-left: 0.15em; }
+.breadcrumb-item[aria-current="page"] { color: var(--text-primary); }
 .detail-seo-inner {
   display: flex;
   gap: clamp(20px, 4vw, 44px);
@@ -1616,13 +1642,21 @@ body, button, input, select, textarea {
 
 /* Tablet */
 @media (max-width: 768px) {
-  body { padding-top: calc(74px + env(safe-area-inset-top, 0px)); }
+  /* Mobile keeps the top navbar but strips it down to just the logo — the
+     Browse button, search field, and all text links (Home/Movies/TV Shows) are
+     hidden because they're redundant with the bottom <MobileTabBar>
+     (Home/Browse/Search). Everything stays in the DOM so crawlers still
+     see/follow the links. */
+  body { padding-top: calc(60px + env(safe-area-inset-top, 0px)); }
   .navbar {
-    height: 74px; padding: 0 12px;
+    height: 60px; padding: 0 12px;
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
   }
-  .navbar img { height: 38px; }
+  .navbar img { height: 34px; }
+  .nav-link-secondary { display: none; }
+  .browse-btn { display: none; }
+  .search-container { display: none; }
   .nav-links { gap: 8px; }
   .nav-links a { font-size: 0.84rem; white-space: nowrap; }
 
@@ -1686,16 +1720,18 @@ body, button, input, select, textarea {
 
 /* Mobile */
 @media (max-width: 480px) {
-  body { padding-top: calc(66px + env(safe-area-inset-top, 0px)); }
+  /* Smaller phones: same logo-only top bar, just a touch shorter. */
+  body { padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
   .navbar {
-    height: 66px; padding: 0 10px;
+    height: 56px; padding: 0 10px;
     padding-left: max(10px, env(safe-area-inset-left, 0px));
     padding-right: max(10px, env(safe-area-inset-right, 0px));
   }
-  .navbar img { height: 32px; }
+  .navbar img { height: 30px; }
   .nav-links { gap: 6px; }
   .nav-links a { font-size: 0.76rem; }
-  .browse-btn { padding: 9px 13px; font-size: 0.8rem; }
+  .browse-btn { display: none; }
+  .search-container { display: none; }
 
   .search-container { flex-basis: 40px; width: 40px; min-width: 40px; max-width: 40px; }
   .search-container.is-open { flex-basis: min(46vw, 180px); width: min(46vw, 180px); max-width: min(46vw, 180px); }

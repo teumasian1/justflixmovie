@@ -7,6 +7,7 @@ import {
   discoverParams,
   filtersLabel,
   ITEMS_PER_PAGE,
+  type BrowseFilters,
 } from '@/lib/browse';
 import { buildItemListJsonLd } from '@/lib/detail';
 import Browse from '@/components/Browse';
@@ -25,6 +26,21 @@ export const revalidate = 3600;
 // landing pages are distinct indexable URLs rather than one generic /browse.
 type Sp = { searchParams: Record<string, string | string[] | undefined> };
 
+// Canonical URL for the active filter set. Only `type`/`genre`/`year`/`country`
+// produce genuinely distinct indexable content; `sort` (same content, reordered)
+// and `page` (paginated) are excluded so all sort/page variants canonicalize to
+// the one filter-specific URL. Previously every filter combo collapsed onto
+// /browse, which told Google they were all duplicates — hiding dozens of
+// keyword-targetable category pages (e.g. "action movies 2024").
+function browseCanonical(f: BrowseFilters): string {
+  const c = new URLSearchParams();
+  c.set('type', f.type);
+  if (f.genre) c.set('genre', f.genre);
+  if (f.year) c.set('year', f.year);
+  if (f.country) c.set('country', f.country);
+  return `/browse?${c.toString()}`;
+}
+
 export function generateMetadata({ searchParams }: Sp): Metadata {
   // normalize searchParams (Next may hand us arrays for repeated keys)
   const sp = new URLSearchParams();
@@ -37,7 +53,8 @@ export function generateMetadata({ searchParams }: Sp): Metadata {
   return {
     title: `${label} — Watch Free Online`,
     description: `${label} available to stream free in HD on JustFlixMovies — no sign-up, no subscription. Filter by genre, year, country, and rating.`,
-    alternates: { canonical: '/browse' },
+    alternates: { canonical: browseCanonical(f) },
+    robots: { index: true, follow: true },
   };
 }
 

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getCatalog, type TmdbItem } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
+import { GENRES } from '@/lib/browse';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
 
@@ -52,6 +53,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/home`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/browse`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
   ];
+
+  // High-value category landing pages — Movies/TV roots plus the main genre ×
+  // type combos. These are the keyword-targetable URLs ("action movies",
+  // "horror tv shows", etc.) that the per-filter canonical (see browse/page.tsx)
+  // now makes indexable. Only the top genres are listed (the ones users
+  // actually search for); niche genres would dilute crawl budget.
+  const CATEGORY_TYPES: ('movie' | 'tv')[] = ['movie', 'tv'];
+  // Skip the empty "All Genres" entry; keep only the high-traffic genres.
+  const TOP_GENRES = GENRES.filter(([id]) => id !== '');
+  for (const type of CATEGORY_TYPES) {
+    // Root category page: /browse?type=movie, /browse?type=tv
+    entries.push({
+      url: `${SITE_URL}/browse?type=${type}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    });
+    // Genre × type pages: /browse?type=movie&genre=28, etc.
+    for (const [genreId] of TOP_GENRES) {
+      entries.push({
+        url: `${SITE_URL}/browse?type=${type}&genre=${genreId}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      });
+    }
+  }
 
   const add = (type: 'movie' | 'tv', items: TmdbItem[]) => {
     for (const item of items) {

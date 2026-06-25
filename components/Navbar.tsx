@@ -16,8 +16,9 @@ export default function Navbar() {
   const [results, setResults] = useState<TmdbItem[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1); // keyboard-focused result
+  const [activeIndex, setActiveIndex] = useState(-1); // keyboard-focus result
   const [clock, setClock] = useState('--:--:--');
+  const [browseType, setBrowseType] = useState<string | null>(null); // ?type= on /browse
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { open } = useModal();
@@ -27,6 +28,17 @@ export default function Navbar() {
   // The welcome landing (/) has its own large hero search, so the compact
   // navbar search is redundant there — hide it on that route only.
   const showSearch = pathname !== '/';
+
+  // Track the /browse ?type= query so the matching nav link can show its active
+  // state. Read from window.location on mount/route change (not useSearchParams,
+  // which would force the whole page into client-side rendering).
+  useEffect(() => {
+    if (pathname !== '/browse') {
+      setBrowseType(null);
+      return;
+    }
+    setBrowseType(new URLSearchParams(window.location.search).get('type'));
+  }, [pathname]);
 
   // Live HUD clock for the navbar ID rail.
   useEffect(() => {
@@ -139,12 +151,30 @@ export default function Navbar() {
           />
         </Link>
         <nav className="nav-links">
-          <Link href="/home" className={pathname === '/home' ? 'active' : ''}>
+          <Link href="/home" className={`nav-link-secondary ${pathname === '/home' ? 'active' : ''}`}>
             Home
           </Link>
-          <button className="browse-btn" onClick={() => router.push('/browse')}>
+          <Link
+            href="/browse?type=movie"
+            className={`nav-link-secondary ${pathname === '/browse' && browseType === 'movie' ? 'active' : ''}`}
+          >
+            Movies
+          </Link>
+          <Link
+            href="/browse?type=tv"
+            className={`nav-link-secondary ${pathname === '/browse' && browseType === 'tv' ? 'active' : ''}`}
+          >
+            TV Shows
+          </Link>
+          {/* Crawlable <a> (was a <button> + router.push, which crawlers can't
+              follow). Carries the same .browse-btn HUD styling so the look is
+              unchanged; the hover/active states are handled by :hover/:active. */}
+          <Link
+            href="/browse"
+            className={`browse-btn ${pathname === '/browse' && !browseType ? 'active' : ''}`}
+          >
             Browse <i className="fas fa-film" />
-          </button>
+          </Link>
           {showSearch && (
             <div
               ref={containerRef}

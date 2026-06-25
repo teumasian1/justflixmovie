@@ -11,6 +11,10 @@ import { useModal } from './ModalContext';
 // (incl. Server 5 / cinemaos.tech), per-server auto-probe, season tabs +
 // dropdown, episode list with prev/next, typewriter title/synopsis, and the
 // iframe with error-recovery server fallback.
+//
+// Accessibility: rendered as a role="dialog" / aria-modal dialog. Focus moves
+// into the dialog on open and is trapped within it; Escape closes; background
+// scroll is locked while open; focus is restored to the opener on close.
 
 interface SeasonData {
   seasons: TmdbSeason[];
@@ -43,6 +47,10 @@ function copyToClipboard(text: string): Promise<void> {
 export default function PlayerModal() {
   const { item, typeDelay, fromRoute, close } = useModal();
   const router = useRouter();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // The element that had focus before the modal opened — restored on close.
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   const [server, setServer] = useState<string>('vidup.to');
   const [seasons, setSeasons] = useState<TmdbSeason[]>([]);
@@ -58,6 +66,62 @@ export default function PlayerModal() {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const type = item?.media_type ?? 'movie';
+
+  // ---- Focus management + scroll lock (runs when an item opens/closes) ----
+  useEffect(() => {
+    if (!item) return;
+
+    // Remember the currently focused element so we can return to it on close.
+    lastFocusedRef.current = (document.activeElement as HTMLElement) || null;
+
+    // Move focus into the dialog (the close button is the first control).
+    // Defer a tick so the element is painted and focusable.
+    const focusTimer = setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 50);
+
+    // Lock background scroll while the modal is open.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.body.style.overflow = prevOverflow;
+      // Restore focus to whatever opened the modal.
+      lastFocusedRef.current?.focus?.();
+    };
+  }, [item?.id]);
+
+  // ---- Escape to close + focus trap ----
+  useEffect(() => {
+    if (!item) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        dismissRef.current?.();
+      } else if (e.key === 'Tab') {
+        // Trap focus within the dialog: wrap from last→first and first→last.
+        const root = dialogRef.current;
+        if (!root) return;
+        const focusables = root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), select, input, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id]);
 
   // ---- URL + history (shareable deep link, mirrors original showDetails) ----
   // Holds the id of the item we pushed a history entry for, so closing can pop
@@ -107,6 +171,74 @@ export default function PlayerModal() {
       close();
     }
   }, [fromRoute, router, close]);
+  // Keep a ref so the keydown handler (which doesn't depend on dismiss) can call
+  // the latest version without re-binding.
+  const dismissRef = useRef(dismiss);
+  dismissRef.current = dismiss;
+
+  // ---- Swipe-to-dismiss (touch) ----
+  // On touch devices, dragging down on the grab handle / server bar (the top of
+  // the sheet) slides the modal down; releasing past a threshold dismisses it.
+  // Dragging is only initiated from .modal-grab / .server-selector so the
+  // scrollable episode list and the video itself stay usable.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({ active: false, startY: 0, currentY: 0 });
+  useEffect(() => {
+    if (!item) return;
+    const content = contentRef.current;
+    const root = dialogRef.current;
+    if (!content || !root) return;
+
+    const DISMISS_THRESHOLD = 120; // px dragged before a release dismisses
+
+    const startFrom = (el: EventTarget | null): boolean =>
+      !!(el && (el as HTMLElement).closest?.('.modal-grab, .server-selector'));
+
+    const onStart = (e: TouchEvent) => {
+      // Only react to a single-finger drag started on the grab area.
+      if (e.touches.length !== 1 || !startFrom(e.target)) return;
+      dragRef.current = { active: true, startY: e.touches[0].clientY, currentY: e.touches[0].clientY };
+      root.classList.add('swiping');
+      root.classList.remove('swipe-ready');
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!dragRef.current.active) return;
+      const y = e.touches[0].clientY;
+      dragRef.current.currentY = y;
+      // Only drag downward (resist upward so it doesn't feel like it pulls up).
+      const dy = Math.max(0, y - dragRef.current.startY);
+      content.style.transform = `translateY(${dy}px)`;
+      // Fade the backdrop with the drag.
+      root.style.opacity = String(Math.max(0.35, 1 - dy / 600));
+    };
+    const onEnd = () => {
+      if (!dragRef.current.active) return;
+      const dy = Math.max(0, dragRef.current.currentY - dragRef.current.startY);
+      dragRef.current.active = false;
+      root.classList.remove('swiping');
+      root.classList.add('swipe-ready');
+      if (dy > DISMISS_THRESHOLD) {
+        dismissRef.current?.();
+      } else {
+        // Snap back (animated via the .swipe-ready transition).
+        content.style.transform = '';
+        root.style.opacity = '';
+      }
+    };
+
+    root.addEventListener('touchstart', onStart, { passive: true });
+    root.addEventListener('touchmove', onMove, { passive: true });
+    root.addEventListener('touchend', onEnd);
+    root.addEventListener('touchcancel', onEnd);
+    return () => {
+      root.removeEventListener('touchstart', onStart);
+      root.removeEventListener('touchmove', onMove);
+      root.removeEventListener('touchend', onEnd);
+      root.removeEventListener('touchcancel', onEnd);
+      root.classList.remove('swiping', 'swipe-ready');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id]);
 
   // Copy the title's shareable deep link, showing a brief "Copied!" confirmation.
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -259,12 +391,27 @@ export default function PlayerModal() {
     if (fallback !== server) setServer(fallback);
   };
 
+  // Clicking the backdrop closes the modal (but not when interacting with its
+  // contents — onClick on .modal only fires for the backdrop itself).
+  const onBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) dismiss();
+  };
+
   return (
-    <div className={`modal show`} id="modal">
-      <button className="close-button" onClick={dismiss} aria-label="Close">
+    <div
+      className="modal show"
+      id="modal"
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Watch ${titleOf(item)}`}
+      onClick={onBackdropClick}
+    >
+      <button className="close-button" ref={closeButtonRef} onClick={dismiss} aria-label="Close">
         &times;
       </button>
-      <div className={`modal-content ${isTV ? 'is-tv-modal' : 'is-movie-modal'}`}>
+      <div className="modal-grab" aria-hidden="true" />
+      <div className={`modal-content ${isTV ? 'is-tv-modal' : 'is-movie-modal'}`} ref={contentRef}>
         <div className="modal-main">
           <div className="video-section">
             <div className="server-selector">
@@ -305,17 +452,19 @@ export default function PlayerModal() {
                   <button
                     className="ep-nav-btn"
                     title="Previous Episode"
+                    aria-label="Previous Episode"
                     disabled={epIndex <= 0}
                     onClick={() => setEpisode(episodes[epIndex - 1].episode_number)}
                   >
                     <i className="fas fa-chevron-left" />
                   </button>
-                  <span className="ep-nav-text">
+                  <span className="ep-nav-text" aria-live="polite">
                     EP <span>{episode}</span>
                   </span>
                   <button
                     className="ep-nav-btn"
                     title="Next Episode"
+                    aria-label="Next Episode"
                     disabled={epIndex < 0 || epIndex >= episodes.length - 1}
                     onClick={() => setEpisode(episodes[epIndex + 1].episode_number)}
                   >
@@ -396,9 +545,11 @@ export default function PlayerModal() {
                 <div className="no-episodes">No episodes available for this season.</div>
               )}
               {episodes.map((ep) => (
-                <div
+                <button
                   key={ep.episode_number}
+                  type="button"
                   className={`episode-item ${ep.episode_number === episode ? 'active' : ''}`}
+                  aria-pressed={ep.episode_number === episode}
                   onClick={() => setEpisode(ep.episode_number)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -415,7 +566,7 @@ export default function PlayerModal() {
                       {ep.overview || 'No description available.'}
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

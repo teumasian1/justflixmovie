@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Browse from '@/components/Browse';
 
 export const metadata: Metadata = {
@@ -11,5 +12,11 @@ export const metadata: Metadata = {
 };
 
 export default function BrowsePage() {
-  return <Browse />;
+  // Suspense boundary required because <Browse> reads useSearchParams() during
+  // render (Next.js opts the page into client-side search-param rendering).
+  return (
+    <Suspense fallback={<div className="loading-spinner" style={{ display: 'flex' }}><div className="spinner" /></div>}>
+      <Browse />
+    </Suspense>
+  );
 }

@@ -1,24 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { BACKDROP_URL, type TmdbItem } from '@/lib/tmdb';
+import { buildHref } from '@/lib/slug';
 import { useModal } from './ModalContext';
 
 // Hero banner with a 5s slideshow over the supplied items, ported from the
 // banner logic in home.js. Items are picked server-side and passed in.
+//
+// Controls: clickable dot indicators + prev/next arrows let the user jump
+// slides directly, and hovering the banner pauses the auto-advance (resumes on
+// leave). The two CTA buttons are distinct: Play opens the player in-app
+// instantly; More Info links to the shareable detail route.
+
+const SLIDE_MS = 5000;
 
 export default function Banner({ items }: { items: TmdbItem[] }) {
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const [clock, setClock] = useState('--:--:--');
   const { open } = useModal();
 
   const slides = items.filter((i) => i.backdrop_path);
 
+  const go = useCallback(
+    (dir: -1 | 1) => setIndex((i) => (i + dir + slides.length) % slides.length),
+    [slides.length]
+  );
+
   useEffect(() => {
-    if (slides.length <= 1) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), 5000);
+    if (slides.length <= 1 || paused) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), SLIDE_MS);
     return () => clearInterval(id);
-  }, [slides.length]);
+  }, [slides.length, paused]);
 
   // Live HUD clock for the hero telemetry readout.
   useEffect(() => {
@@ -38,12 +53,16 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
   // Deterministic pseudo-coordinates derived from the item id (fake telemetry).
   const lat = (((item.id % 18000) / 100) - 90).toFixed(2);
   const lon = (((item.id % 36000) / 100) - 180).toFixed(2);
+  const mediaType: 'movie' | 'tv' = isTV ? 'tv' : 'movie';
+  const detailHref = buildHref(mediaType, item);
 
   return (
     <div
       className="banner"
       id="banner"
       style={{ backgroundImage: `url(${BACKDROP_URL}${item.backdrop_path})` }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
     >
       <div className="banner-scan" aria-hidden="true" />
       <div className="banner-content">
@@ -62,18 +81,55 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
           <span className="banner-chip hd">HD</span>
         </div>
         <div className="banner-buttons">
+          {/* Play opens the player modal in-app instantly. */}
           <button className="banner-button play" onClick={() => open(item)}>
             <i className="fas fa-play" /> Play
           </button>
-          <button className="banner-button more-info" onClick={() => open(item)}>
+          {/* More Info opens the shareable detail route (own URL + SEO page). */}
+          <Link href={detailHref} className="banner-button more-info">
             <i className="fas fa-info-circle" /> More Info
-          </button>
+          </Link>
         </div>
       </div>
       <div className="banner-telemetry" aria-hidden="true">
         LAT <b>{lat}</b> // LON <b>{lon}</b><br />
         FEED <b>{String(index + 1).padStart(2, '0')}/{String(slides.length).padStart(2, '0')}</b> // <b>{clock}</b>
       </div>
+
+      {/* Slideshow controls — only when there is more than one slide. */}
+      {slides.length > 1 && (
+        <>
+          <button
+            type="button"
+            className="banner-arrow banner-arrow-prev"
+            aria-label="Previous featured title"
+            onClick={() => go(-1)}
+          >
+            <i className="fas fa-chevron-left" />
+          </button>
+          <button
+            type="button"
+            className="banner-arrow banner-arrow-next"
+            aria-label="Next featured title"
+            onClick={() => go(1)}
+          >
+            <i className="fas fa-chevron-right" />
+          </button>
+          <div className="banner-dots" role="tablist" aria-label="Featured titles">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                aria-label={`Show featured title ${i + 1}`}
+                className={`banner-dot ${i === index ? 'is-active' : ''}`}
+                onClick={() => setIndex(i)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

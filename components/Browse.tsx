@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { TmdbItem, MediaType } from '@/lib/tmdb';
 import PosterCard from './PosterCard';
 
 // Browse view with genre/year/country/sort filters + pagination, ported from
-// js/browse.js. Discover requests go through the /api/tmdb proxy.
+// js/browse.js. Discover requests go through the /api/tmdb proxy. Initial filter
+// values are read from the URL (?type=tv&genre=28 …) so links from the footer
+// or elsewhere can deep-link straight into a filtered view.
 
 const GENRES = [
   ['', 'All Genres'], ['28', 'Action'], ['12', 'Adventure'], ['16', 'Animation'],
@@ -27,11 +30,17 @@ const SORTS = [
 const ITEMS_PER_PAGE = 36;
 
 export default function Browse() {
-  const [type, setType] = useState<MediaType>('movie');
-  const [genre, setGenre] = useState('');
-  const [year, setYear] = useState('');
-  const [country, setCountry] = useState('');
-  const [sort, setSort] = useState('popularity.desc');
+  // Read initial filters from the URL so the page is deep-linkable
+  // (e.g. footer "Watch TV Shows" → /browse?type=tv).
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [type, setType] = useState<MediaType>(
+    (searchParams.get('type') as MediaType) === 'tv' ? 'tv' : 'movie'
+  );
+  const [genre, setGenre] = useState(searchParams.get('genre') || '');
+  const [year, setYear] = useState(searchParams.get('year') || '');
+  const [country, setCountry] = useState(searchParams.get('country') || '');
+  const [sort, setSort] = useState(searchParams.get('sort') || 'popularity.desc');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [items, setItems] = useState<TmdbItem[]>([]);
@@ -80,6 +89,21 @@ export default function Browse() {
   useEffect(() => {
     fetchContent();
   }, [fetchContent]);
+
+  // Keep the URL in sync with the active filters so the current view is
+  // shareable/bookmarkable. Skips empty values to keep it tidy.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (type !== 'movie') params.set('type', type);
+    if (genre) params.set('genre', genre);
+    if (year) params.set('year', year);
+    if (country) params.set('country', country);
+    if (sort !== 'popularity.desc') params.set('sort', sort);
+    if (page > 1) params.set('page', String(page));
+    const qs = params.toString();
+    router.replace(qs ? `/browse?${qs}` : '/browse', { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, genre, year, country, sort, page]);
 
   // Reset to page 1 whenever a filter (not the page) changes.
   const onFilter = (setter: (v: string) => void) => (v: string) => {
@@ -130,8 +154,8 @@ export default function Browse() {
         </div>
       )}
 
-      <div className="browse-results" style={{ display: loading ? 'none' : 'block' }}>
-        <div className="browse-grid">
+      <div className={`browse-results ${loading ? 'is-loading' : ''}`} style={{ display: loading ? 'none' : 'block' }}>
+        <div className="browse-grid grid-reveal">
           {items.map((item) => (
             <PosterCard key={item.id} item={{ ...item, media_type: type }} />
           ))}

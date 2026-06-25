@@ -6,16 +6,20 @@ import { useRouter, usePathname } from 'next/navigation';
 import { IMG_URL, type TmdbItem } from '@/lib/tmdb';
 import { useModal } from './ModalContext';
 
-// Navbar: logo, Browse link, live multi-search (via /api/tmdb proxy), and the
-// 5-agent theme picker. Ported from the navbar + search logic in home.js.
+// Navbar: logo, Home + Browse links, live multi-search (via /api/tmdb proxy),
+// and the live HUD clock. Search results appear in a compact floating dropdown
+// (not a full-page takeover) with ↑/↓ keyboard navigation and a "see all
+// results" link into the full /search results page.
 
 export default function Navbar() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TmdbItem[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1); // keyboard-focused result
   const [clock, setClock] = useState('--:--:--');
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { open } = useModal();
   const router = useRouter();
   const pathname = usePathname();
@@ -36,6 +40,7 @@ export default function Navbar() {
   useEffect(() => {
     if (!query.trim()) {
       setResults(null);
+      setActiveIndex(-1);
       return;
     }
     setSearching(true);
@@ -43,7 +48,12 @@ export default function Navbar() {
       try {
         const res = await fetch(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`);
         const data = await res.json();
-        setResults((data.results || []).filter((i: TmdbItem) => i.poster_path));
+        // Keep only titles with a poster; cap the dropdown at 6 for a tidy list.
+        const top = (data.results || [])
+          .filter((i: TmdbItem) => i.poster_path)
+          .slice(0, 6);
+        setResults(top);
+        setActiveIndex(top.length ? 0 : -1);
       } catch {
         setResults([]);
       } finally {
@@ -53,17 +63,55 @@ export default function Navbar() {
     return () => clearTimeout(id);
   }, [query]);
 
-  // Close results when clicking outside.
+  // Close the dropdown when clicking outside.
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setResults(null);
+        setActiveIndex(-1);
         setMobileOpen(false);
       }
     };
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, []);
+
+  // Open a result: in-app modal for an instant launch, then close the dropdown.
+  const openResult = (item: TmdbItem) => {
+    open(item);
+    setQuery('');
+    setResults(null);
+    setActiveIndex(-1);
+    setMobileOpen(false);
+    inputRef.current?.blur();
+  };
+
+  // Keyboard navigation inside the dropdown: ↑/↓ move, Enter opens (or jumps to
+  // the full results page when none is focused), Escape closes.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!results || results.length === 0) {
+      if (e.key === 'Enter' && query.trim()) {
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % results.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => (i <= 0 ? results.length - 1 : i - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const target = results[activeIndex];
+      if (target) openResult(target);
+      else router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+    } else if (e.key === 'Escape') {
+      setResults(null);
+      setActiveIndex(-1);
+      inputRef.current?.blur();
+    }
+  };
 
   return (
     <>
@@ -76,6 +124,9 @@ export default function Navbar() {
           <img src="/lulu.png" alt="JustFlixMovies" width={81} height={54} style={{ cursor: 'pointer' }} id="logo" />
         </Link>
         <nav className="nav-links">
+          <Link href="/home" className={pathname === '/home' ? 'active' : ''}>
+            Home
+          </Link>
           <button className="browse-btn" onClick={() => router.push('/browse')}>
             Browse <i className="fas fa-film" />
           </button>
@@ -92,61 +143,92 @@ export default function Navbar() {
                 onClick={(e) => {
                   e.stopPropagation();
                   setMobileOpen((v) => !v);
+                  if (!mobileOpen) setTimeout(() => inputRef.current?.focus(), 60);
                 }}
               >
                 <i className="fas fa-search" />
               </button>
               <input
+                ref={inputRef}
                 type="text"
                 className="search-bar"
                 placeholder="Search..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKeyDown}
+                aria-expanded={results !== null && results.length > 0}
+                aria-controls="navbar-search-results"
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  activeIndex >= 0 && results && results[activeIndex]
+                    ? `nav-search-${results[activeIndex].id}`
+                    : undefined
+                }
               />
+
+              {/* Compact dropdown (absolute, capped height) instead of a
+                  full-page takeover. Stays anchored under the search field. */}
+              {results !== null && (
+                <div className="nav-search-dropdown" id="navbar-search-results" role="listbox">
+                  {searching && (
+                    <div className="nav-search-status">
+                      <span className="spinner spinner-sm" /> Searching…
+                    </div>
+                  )}
+                  {!searching && results.length === 0 && (
+                    <div className="nav-search-status">No results found</div>
+                  )}
+                  {!searching &&
+                    results.map((item, i) => (
+                      <button
+                        key={item.id}
+                        id={`nav-search-${item.id}`}
+                        type="button"
+                        role="option"
+                        aria-selected={i === activeIndex}
+                        className={`nav-search-item ${i === activeIndex ? 'is-active' : ''}`}
+                        onMouseEnter={() => setActiveIndex(i)}
+                        onClick={() => openResult(item)}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          className="nav-search-poster"
+                          width={92}
+                          height={138}
+                          src={`${IMG_URL}${item.poster_path}`}
+                          alt=""
+                        />
+                        <span className="nav-search-info">
+                          <span className="nav-search-title">{item.title || item.name}</span>
+                          <span className="nav-search-type">
+                            {item.media_type === 'tv' || item.first_air_date
+                              ? 'TV Series'
+                              : 'Movie'}
+                            {item.release_date || item.first_air_date
+                              ? ` · ${new Date(item.release_date || item.first_air_date || '').getFullYear()}`
+                              : ''}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  {!searching && results.length > 0 && (
+                    <Link
+                      className="nav-search-all"
+                      href={`/search?q=${encodeURIComponent(query.trim())}`}
+                      onClick={() => {
+                        setResults(null);
+                        setMobileOpen(false);
+                      }}
+                    >
+                      See all results for “{query.trim()}” <i className="fas fa-arrow-right" />
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </nav>
       </header>
-
-      {showSearch && results !== null && (
-        <div className="search-results-container" style={{ display: 'block' }}>
-          <div className="browse-grid" id="navbar-search-results">
-            {searching && (
-              <div className="loading-spinner">
-                <div className="spinner" />
-                <p>Searching...</p>
-              </div>
-            )}
-            {!searching && results.length === 0 && (
-              <div className="no-results">No results found</div>
-            )}
-            {!searching &&
-              results.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="search-result-card"
-                  aria-label={`Open ${item.title || item.name}`}
-                  onClick={() => {
-                    open(item);
-                    setQuery('');
-                    setResults(null);
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="search-result-poster"
-                    width={500}
-                    height={750}
-                    src={`${IMG_URL}${item.poster_path}`}
-                    alt={item.title || item.name || ''}
-                  />
-                  <span className="search-result-title">{item.title || item.name}</span>
-                </button>
-              ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }

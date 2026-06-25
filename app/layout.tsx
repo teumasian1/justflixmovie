@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from 'next';
+import Link from 'next/link';
 import './globals.css';
 import { ModalProvider } from '@/components/ModalContext';
 import Navbar from '@/components/Navbar';
 import PlayerModal from '@/components/PlayerModal';
 import Popunder from '@/components/Popunder';
 import SystemChrome from '@/components/SystemChrome';
+import MobileTabBar from '@/components/MobileTabBar';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
 
@@ -93,10 +95,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
+        {/*
+          Google Fonts loaded NON-render-blocking. The CSS is fetched as a
+          `print` stylesheet (the browser deprioritises it and does NOT block
+          first paint waiting on it), then a tiny inline script flips it to
+          `all` as soon as it loads. <noscript> keeps the fonts working with JS
+          disabled. This removes the render-blocking 3rd-party stylesheet from
+          the critical path — the biggest LCP win on this page. Text paints
+          immediately in the system fallback, then swaps to the web font on load
+          with display=swap (no invisible text).
+        */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
+          id="gfonts-css"
           rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
+          media="print"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var l=document.getElementById('gfonts-css');if(!l)return;function s(){l.media='all';}if(l.sheet){s();}else{l.addEventListener('load',s);}})();`,
+          }}
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
+          />
+        </noscript>
         {/*
           Font Awesome loaded non-render-blocking: fetched as a `print`
           stylesheet (the browser deprioritises it and doesn't block paint),
@@ -144,6 +169,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <PlayerModal />
           <SystemChrome />
+          <MobileTabBar />
         </ModalProvider>
       </body>
     </html>
@@ -160,9 +186,10 @@ function Footer() {
           responsible for any media files shown by the video providers.
         </p>
         <div className="footer-links">
-          <a href="/">Stream Movies</a>
-          <a href="/">Watch TV Shows</a>
-          <a href="/browse">Browse Genres</a>
+          <Link href="/home">Stream Movies</Link>
+          <Link href="/browse?type=tv">Watch TV Shows</Link>
+          <Link href="/browse">Browse Genres</Link>
+          <Link href="/search">Search Titles</Link>
         </div>
       </div>
     </footer>

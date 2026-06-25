@@ -44,8 +44,8 @@
   --bg-elevated:   #111111;
   --surface:       #0C0C0C;
   --text-primary:  #F5F5F5;
-  --text-secondary:rgba(245,245,245,0.58);
-  --text-faint:    rgba(245,245,245,0.36);
+  --text-secondary:rgba(245,245,245,0.66);
+  --text-faint:    rgba(245,245,245,0.52);
 
   --accent:        #E5484D;
   --accent-2:      #FF6369;
@@ -479,8 +479,61 @@ body, button, input, select, textarea {
   background: transparent;
   color: #fff;
   border: var(--hard);
+  text-decoration: none;
 }
 .banner-button.more-info:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Banner slideshow controls — arrows + dot indicators. */
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  border: var(--hard-red);
+  color: #fff;
+  cursor: pointer;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity var(--transition), background var(--transition), color var(--transition);
+  -webkit-appearance: none; appearance: none;
+}
+.banner:hover .banner-arrow { opacity: 0.9; }
+.banner-arrow:hover { background: var(--accent); color: #000; box-shadow: var(--neon-glow); opacity: 1; }
+.banner-arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; opacity: 1; }
+.banner-arrow-prev { left: clamp(12px, 2vw, 24px); }
+.banner-arrow-next { right: clamp(12px, 2vw, 24px); }
+@media (hover: none) and (pointer: coarse) {
+  .banner-arrow { opacity: 0.85; width: 40px; height: 40px; }
+}
+
+.banner-dots {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+}
+.banner-dot {
+  width: 10px; height: 10px;
+  padding: 0;
+  background: rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  -webkit-appearance: none; appearance: none;
+}
+.banner-dot:hover { background: rgba(255,255,255,0.6); }
+.banner-dot.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--neon-glow);
+  transform: scale(1.15);
+}
+.banner-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Staged entrance */
 .banner-content > * { animation: bannerRise 0.7s var(--ease-out) both; }
@@ -936,47 +989,86 @@ body, button, input, select, textarea {
   -webkit-box-orient: vertical; overflow: hidden;
 }
 
-/* Search results */
+/* ===== NAVBAR SEARCH DROPDOWN (compact, anchored under the field) ===== */
+.nav-search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(380px, 92vw);
+  max-height: min(72vh, 560px);
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: var(--hard-red);
+  box-shadow: var(--shadow-dropdown);
+  z-index: 2100;
+  padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+  /* Open with a quick scale + fade so it doesn't pop. */
+  animation: navDrop 0.16s var(--ease-out) both;
+  transform-origin: top right;
+}
+@keyframes navDrop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.nav-search-dropdown::-webkit-scrollbar { width: 6px; }
+.nav-search-dropdown::-webkit-scrollbar-thumb { background-image: var(--grad); }
+
+.nav-search-status {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono); font-size: 0.78rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.nav-search-item {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 8px;
+  background: transparent; border: none;
+  color: var(--text-primary); text-align: left;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.nav-search-item:hover,
+.nav-search-item.is-active { background: var(--hover-bg); }
+.nav-search-item:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -2px;
+}
+.nav-search-poster {
+  width: 40px; height: 60px; flex-shrink: 0;
+  object-fit: cover; border: var(--hair);
+}
+.nav-search-info {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+.nav-search-title {
+  font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-search-type {
+  font-family: var(--font-mono); font-size: 0.68rem;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent);
+}
+.nav-search-all {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px;
+  margin-top: 4px;
+  border-top: var(--hair);
+  color: var(--accent); text-decoration: none;
+  font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  transition: background var(--transition), color var(--transition);
+}
+.nav-search-all:hover { background: var(--hover-bg); color: var(--text-primary); }
+
+/* Small spinner variant for the dropdown status row. */
+.spinner-sm { width: 16px; height: 16px; border-width: 2px; animation-duration: 0.7s; }
+
+/* ===== SEARCH RESULTS PAGE (still used by /search) ===== */
 .search-results-container {
-  display: none; padding: 28px;
-  padding-left: max(28px, env(safe-area-inset-left, 0px));
-  padding-right: max(28px, env(safe-area-inset-right, 0px));
-  min-height: calc(100vh - 84px);
-  min-height: calc(100dvh - 84px);
-}
-.search-results-container .browse-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  gap: 22px; padding: 0;
-}
-.search-results-container .search-result-card {
-  width: 100%; padding: 0; border: none;
-  background: transparent; color: var(--text-primary);
-  text-align: left; cursor: pointer;
-}
-.search-results-container .search-result-poster {
-  display: block; width: 100%; height: 300px;
-  object-fit: cover; border-radius: 0;
-  border: var(--hard);
-  box-shadow: var(--shadow-card);
-  transition: transform 0.25s var(--ease-out), box-shadow 0.25s ease, border-color 0.25s ease;
-}
-.search-results-container .search-result-card:hover .search-result-poster,
-.search-results-container .search-result-card:focus-visible .search-result-poster {
-  transform: translateY(-5px);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-glow);
-}
-.search-results-container .search-result-title {
-  display: -webkit-box; margin-top: 11px;
-  font-family: var(--font-mono);
-  font-size: 0.84rem; font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.35; color: var(--text-primary);
-  -webkit-line-clamp: 2; line-clamp: 2;
-  -webkit-box-orient: vertical; overflow: hidden;
-}
-.search-results-container .search-result-card:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 0;
+  padding: 0;
 }
 
 .no-results {
@@ -1294,7 +1386,8 @@ body, button, input, select, textarea {
 
 .episode-item {
   display: flex; gap: 16px; padding: 12px;
-  border-radius: 0; cursor: pointer;
+  width: 100%; text-align: left; font: inherit; color: inherit;
+  background: transparent; border-radius: 0; cursor: pointer;
   transition: all 0.18s ease; margin-bottom: 8px;
   border: var(--hair); border-left: 3px solid transparent;
 }
@@ -1303,6 +1396,7 @@ body, button, input, select, textarea {
   background: var(--grad-soft); border-color: var(--glass-border-2); border-left: 3px solid var(--accent);
 }
 .episode-item:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.episode-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .episode-thumbnail {
   width: 152px; height: 86px; border-radius: 0;
   border: var(--hair);
@@ -1569,10 +1663,9 @@ body, button, input, select, textarea {
 
   .filters-container { gap: 14px; }
   .filter-group { min-width: 120px; }
-  .browse-grid, .search-results-container .browse-grid { grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 16px; }
+  .browse-grid { grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 16px; }
   .browse-results .poster-container { height: 246px; }
-  .search-results-container .search-result-poster { height: 246px; }
-  .search-results-container { padding: 18px; }
+  .nav-search-dropdown { width: min(340px, 94vw); }
 
   /* Modal tablet */
   .modal-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: 16px 20px 24px; }
@@ -1624,9 +1717,9 @@ body, button, input, select, textarea {
 
   .filters-container { gap: 10px; }
   .filter-group { min-width: 100%; }
-  .browse-grid, .search-results-container .browse-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .browse-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .browse-results .poster-container { height: 228px; }
-  .search-results-container .search-result-poster { height: 228px; }
+  .nav-search-dropdown { right: 8px; width: calc(100vw - 16px); }
 
   .server-buttons { gap: 5px; }
   .server-btn { padding: 6px 12px; font-size: 0.82rem; }
@@ -1643,7 +1736,6 @@ body, button, input, select, textarea {
   .ep-nav-text { font-size: 0.8rem; min-width: 0; }
   .episode-nav { grid-column: 1 / -1; width: 100%; margin-left: 0; justify-content: space-between; display: flex; }
 
-  .search-results-container { padding: 16px; }
   .modal-body { padding: 12px 14px 20px; }
   .modal-image { width: min(28vw, 100px); }
   .modal-text h2 { font-size: 1.35rem; }
@@ -1690,9 +1782,8 @@ body, button, input, select, textarea {
 
   .filters-container { gap: 10px; }
   .filter-group { min-width: 140px; }
-  .browse-grid, .search-results-container .browse-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .browse-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
   .browse-results .poster-container { height: 210px; }
-  .search-results-container .search-result-poster { height: 210px; }
 
   .modal-content { min-height: 100dvh; }
   .video-wrapper { padding-top: 0; aspect-ratio: 16 / 9; min-height: 0; }
@@ -1768,11 +1859,16 @@ body, button, input, select, textarea {
 ::selection { background: var(--accent); color: #000; }
 ::-moz-selection { background: var(--accent); color: #000; }
 
-/* Custom crosshair cursor over interactive zones. */
-a, button, .poster-container, .banner-button, .browse-btn, .scroll-btn,
-.season-tab, .server-btn, .pagination button, .nav-links a, .hero-search-btn,
-.search-result-card, .episode-item, .filter-group select, .close-button {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg stroke='%23E5484D' stroke-width='1.5'%3E%3Cline x1='12' y1='2' x2='12' y2='8'/%3E%3Cline x1='12' y1='16' x2='12' y2='22'/%3E%3Cline x1='2' y1='12' x2='8' y2='12'/%3E%3Cline x1='16' y1='12' x2='22' y2='12'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%23E5484D'/%3E%3C/svg%3E") 12 12, pointer;
+/* Custom crosshair cursor over browsing surfaces only (posters, hero, rows).
+   Kept off form fields, close buttons, and chrome controls so target acquisition
+   and the native caret/pointer stay predictable. Disabled under reduced-motion
+   and on touch devices. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .poster-container, .banner-content, .banner-button, .list,
+  .hero-landing, .hero-search-btn, .nav-search-item, .search-result-card,
+  .browse-grid .poster-container {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg stroke='%23E5484D' stroke-width='1.5'%3E%3Cline x1='12' y1='2' x2='12' y2='8'/%3E%3Cline x1='12' y1='16' x2='12' y2='22'/%3E%3Cline x1='2' y1='12' x2='8' y2='12'/%3E%3Cline x1='16' y1='12' x2='22' y2='12'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%23E5484D'/%3E%3C/svg%3E") 12 12, pointer;
+  }
 }
 
 /* ---- Hero scanline sweep — one CRT refresh on load ---- */
@@ -1906,13 +2002,18 @@ a, button, .poster-container, .banner-button, .browse-btn, .scroll-btn,
 .nav-idrail b { color: var(--accent); }
 @media (max-width: 600px) { .nav-idrail { display: none; } }
 
-/* ---- Boot sequence overlay (first paint) ---- */
+/* ---- Boot sequence flash (first paint) ----
+   A quick, non-blocking corner flash instead of a full-screen overlay that
+   locks the UI for over a second. Fades from black to transparent fast so the
+   page is usable almost immediately while still giving a "terminal boot" cue. */
 .boot-seq {
   position: fixed; inset: 0; z-index: 9000; background: #000;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-mono); color: var(--accent);
   font-size: clamp(0.7rem, 2.6vw, 1rem); letter-spacing: 0.34em; text-transform: uppercase;
-  animation: bootOut 0.6s ease 0.55s forwards;
+  /* ~0.55s total: brief hold then a quick fade. */
+  animation: bootOut 0.3s ease 0.25s forwards;
+  pointer-events: none;
 }
 .boot-seq::after { content: '_'; animation: recBlink 0.6s steps(1) infinite; }
 @keyframes bootOut { to { opacity: 0; visibility: hidden; } }
@@ -1926,6 +2027,221 @@ a, button, .poster-container, .banner-button, .browse-btn, .scroll-btn,
   transition: transform 0.08s linear;
 }
 
+/* ---- Back-to-top button ---- */
+.back-to-top {
+  position: fixed;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-elevated);
+  border: var(--hard-red);
+  color: var(--accent);
+  cursor: pointer;
+  z-index: 2400;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity var(--transition), transform var(--transition), background var(--transition), color var(--transition);
+  -webkit-appearance: none; appearance: none;
+}
+.back-to-top.is-visible {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.back-to-top:hover {
+  background: var(--accent); color: #000;
+  box-shadow: var(--neon-glow);
+}
+.back-to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 480px) {
+  .back-to-top { width: 42px; height: 42px; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ===== NOT-FOUND (404) ===== */
+.not-found {
+  min-height: calc(70vh - 72px);
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(48px, 8vw, 96px) clamp(16px, 5vw, 64px);
+}
+.not-found-inner {
+  width: 100%; max-width: 640px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.not-found h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 700; line-height: 0.96; color: var(--text-primary);
+  text-transform: uppercase; letter-spacing: -0.01em; margin: 0;
+}
+.not-found h1::after {
+  content: ''; display: block;
+  width: 90px; height: 6px; margin: 0.7rem auto 0;
+  background: var(--accent); box-shadow: var(--neon-glow);
+}
+.not-found p {
+  color: var(--text-secondary); font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+  line-height: 1.6; max-width: 52ch; margin: 0;
+}
+.not-found-actions {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+  margin-top: 10px;
+}
+
+/* ============================================================
+   MOBILE / TOUCH ENHANCEMENTS
+   ============================================================ */
+
+/* ---- Poster tap-reveal (touch devices have no hover) ----
+   On coarse pointers the info overlay stays visible as a compact gradient with
+   title + rating so users aren't tapping blind; the full overlay still slides
+   up on :active (tap-hold) for the synopsis. Tap feedback also scales the card
+   down slightly instead of relying on the desktop hover-lift. */
+@media (hover: none) and (pointer: coarse) {
+  .poster-container,
+  .browse-results .poster-container { transform: none; }
+  .poster-container:hover,
+  .browse-results .poster-container:hover { transform: none; box-shadow: var(--shadow-card); border-color: var(--glass-border); }
+
+  /* Compact always-on label strip at the bottom of every poster. */
+  .poster-container .poster-overlay {
+    opacity: 1;
+    transform: translateY(0);
+    /* Only cover the lower portion; keep the poster art visible. */
+    height: auto;
+    bottom: 0; top: auto;
+    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.78) 38%, rgba(0,0,0,0) 100%);
+    padding: 26px 12px 12px;
+    justify-content: flex-end;
+  }
+  .poster-container .poster-description { display: none; }
+  .poster-container .poster-title { font-size: 0.82rem; -webkit-line-clamp: 2; line-clamp: 2; }
+  .poster-container .poster-year { margin: 2px 0; font-size: 0.66rem; }
+  .poster-container .poster-overlay .rating { margin: 2px 0; font-size: 0.72rem; }
+
+  /* Active (finger-press) state: scale down + red ring = clear tap target. */
+  .poster-container:active {
+    transform: scale(0.96);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+/* ---- Bottom mobile tab bar (thumb-friendly nav) ----
+   Hidden on desktop, shown on small screens. Mirrors the primary nav links so
+   the Home / Browse / Search targets are always within thumb reach. */
+.mobile-tabbar { display: none; }
+
+@media (max-width: 768px) {
+  /* Leave room for the fixed tab bar. */
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+
+  .mobile-tabbar {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 1900;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: var(--hard-red);
+    justify-content: space-around; align-items: stretch;
+  }
+  /* Respect the [hidden] attribute (the class display:flex would otherwise win
+     and keep the bar visible while the player modal is open). */
+  .mobile-tabbar[hidden] { display: none !important; }
+  .mobile-tab {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    background: transparent; border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    padding-top: 8px;
+    transition: color var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-tab i { font-size: 1.15rem; }
+  .mobile-tab.active { color: var(--accent); }
+  .mobile-tab.active i { filter: drop-shadow(0 0 8px var(--accent-glow)); }
+  .mobile-tab:active { color: var(--accent); }
+}
+
+/* ---- Modal swipe-to-dismiss (handled in JS; CSS provides the transform) ----
+   The .modal-content gets a translateY driven by the drag; when released past
+   the threshold the modal closes. The backdrop fades with it. The transition
+   here only governs the snap-back; .swiping removes it for 1:1 finger tracking. */
+.modal.swipe-ready .modal-content { transition: transform 0.3s var(--ease-out); }
+.modal.swiping .modal-content { transition: none; }
+
+/* Grab handle at the top of the modal on mobile — a visual affordance that the
+   sheet can be dragged down to dismiss. */
+.modal-grab {
+  display: none;
+  position: absolute;
+  top: 8px; left: 50%; transform: translateX(-50%);
+  width: 44px; height: 5px;
+  background: var(--glass-border);
+  border-radius: 99px;
+  z-index: 10001;
+  pointer-events: none;
+}
+@media (max-width: 1200px) {
+  .modal.show .modal-grab { display: block; }
+}
+
+/* ============================================================
+   UI ANIMATION POLISH
+   ============================================================ */
+
+/* ---- Staggered reveal for browse & search grids ----
+   Cards rise + fade in sequence as they enter the viewport. The hidden initial
+   state is scoped under .reveal-ready (added by JS), so the grid is fully
+   visible if the IntersectionObserver script doesn't run. */
+.reveal-ready .grid-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+.reveal-ready .grid-reveal.is-visible {
+  opacity: 1; transform: none;
+}
+/* A light per-card stagger (first 12 cards) so a row doesn't all land at once. */
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(1) { transition-delay: 0.00s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(2) { transition-delay: 0.04s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(3) { transition-delay: 0.08s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(4) { transition-delay: 0.12s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(5) { transition-delay: 0.16s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(6) { transition-delay: 0.20s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(7) { transition-delay: 0.24s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(8) { transition-delay: 0.28s; }
+.reveal-ready .grid-reveal.is-visible .poster-container:nth-child(n+9) { transition-delay: 0.32s; }
+
+/* ---- Hero search focus flourish ----
+   When the hero search input is focused, the whole field lifts slightly and the
+   red glow intensifies — a clear "you are here" cue. */
+.hero-search {
+  transition: transform var(--transition), filter var(--transition);
+}
+.hero-search:focus-within {
+  transform: translateY(-3px);
+  filter: drop-shadow(0 8px 24px rgba(229,72,77,0.18));
+}
+.hero-search-input:focus { border-color: var(--accent); }
+
+/* ---- Loading spinner entrance for grids ----
+   When the grid is loading, a soft pulse hints that content is incoming. */
+.browse-results { transition: opacity 0.3s ease; }
+.browse-results.is-loading { opacity: 0.5; }
+
+/* ---- Pagination smooth scroll ----
+   After changing pages, JS scrolls the grid back into view smoothly. */
+html { scroll-behavior: smooth; }
+
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1935,4 +2251,7 @@ a, button, .poster-container, .banner-button, .browse-btn, .scroll-btn,
     scroll-behavior: auto !important;
   }
   body::before { animation: none !important; }
+  /* Skip the mobile tap-reveal transforms and grid reveals entirely. */
+  .poster-container:active { transform: none !important; }
+  .reveal-ready .grid-reveal { opacity: 1 !important; transform: none !important; }
 }

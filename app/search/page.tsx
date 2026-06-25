@@ -62,7 +62,7 @@ export default async function SearchPage({
       )}
 
       {results.length > 0 && (
-        <div className="browse-grid">
+        <div className="browse-grid grid-reveal">
           {results.map((item) => (
             <PosterCard key={`${item.id}-${item.media_type ?? ''}`} item={item} />
           ))}

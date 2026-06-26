@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { TmdbItem, MediaType } from '@/lib/tmdb';
 import {
@@ -91,6 +91,19 @@ export default function Browse({
     fetchContent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchContent, skipNext]);
+
+  // Auto-scroll to the top of the results whenever the page changes (Next/Prev),
+  // so the user sees the fresh grid instead of staying parked at the bottom near
+  // the pagination buttons. Uses smooth scroll unless reduced-motion is preferred.
+  // Only triggers on the `page` value — filter changes reset to page 1 and also
+  // scroll, which is the desired behaviour (new filter → start at the top).
+  const prevPageRef = useRef(page);
+  useEffect(() => {
+    if (prevPageRef.current === page) return;
+    prevPageRef.current = page;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  }, [page]);
 
   // Keep the URL in sync with the active filters so the current view is
   // shareable/bookmarkable. Skips empty values to keep it tidy.

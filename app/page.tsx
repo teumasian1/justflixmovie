@@ -56,9 +56,13 @@ export default function WelcomePage() {
             registration, no subscription. Start typing to search thousands of free titles.
           </p>
           <HeroSearch />
-          <Link href="/home" className="hero-landing-cta">
+          {/* Plain <a> (not next/link) so the first tap always triggers a native
+              browser navigation, even before React hydrates. With <Link>, a tap
+              during the mobile hydration window can be swallowed (looks like a
+              no-op until the second tap). A real <a href> has no such race. */}
+          <a href="/home" className="hero-landing-cta">
             Or browse the curated trending list <i className="fas fa-arrow-right" aria-hidden="true" />
-          </Link>
+          </a>
         </div>
       </section>
 

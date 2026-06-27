@@ -1869,9 +1869,17 @@ body, button, input, select, textarea {
   width: 100dvw !important; height: 100dvh !important;
   border: none !important;
 }
-/* Don't let the server bar overlay the video while fullscreen */
+/* Don't let the server bar overlay the video while fullscreen. Covers two
+   cases: (a) .video-section itself is the fullscreen element (:fullscreen),
+   and (b) the embedded iframe is the fullscreen element, making .video-section
+   an ancestor of the fullscreen node (:fullscreen-within). The iframe case is
+   the common one — clicking the player's own fullscreen button fullscreens the
+   #modal-video iframe, not our wrapper — so :fullscreen-within is what actually
+   hides the server bar in practice. */
 .video-section:fullscreen .server-selector,
-.video-section:-webkit-full-screen .server-selector { display: none; }
+.video-section:-webkit-full-screen .server-selector,
+.video-section:fullscreen-within .server-selector,
+.video-section:-webkit-full-screen .server-selector { display: none !important; }
 /* Any residual backdrop stays seamless black, not a visible gap */
 :fullscreen::backdrop { background: #000; }
 :-webkit-full-screen::backdrop { background: #000; }

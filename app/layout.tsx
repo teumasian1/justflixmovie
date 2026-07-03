@@ -8,7 +8,7 @@ import Popunder from '@/components/Popunder';
 import SystemChrome from '@/components/SystemChrome';
 import MobileTabBar from '@/components/MobileTabBar';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.justflixmovies.online';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

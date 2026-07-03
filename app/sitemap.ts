@@ -3,7 +3,7 @@ import { getCatalog, type TmdbItem } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
 import { GENRES } from '@/lib/browse';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.justflixmovies.online';
 
 // Dynamic sitemap. Instead of the old hand-maintained sitemap2.xml (101 fixed
 // URLs), this pulls a broad slice of the TMDB catalog — popular, top-rated,

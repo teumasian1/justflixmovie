@@ -3,7 +3,7 @@ import type { TmdbItem, MediaType } from './tmdb';
 import { IMG_URL } from './tmdb';
 import { titleOf, yearOf, buildHref } from './slug';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://justflixmovies.online';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.justflixmovies.online';
 
 function truncate(s: string, n = 160): string {
   const t = s.replace(/\s+/g, ' ').trim();

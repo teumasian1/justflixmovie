@@ -59,6 +59,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // "horror tv shows", etc.) that the per-filter canonical (see browse/page.tsx)
   // now makes indexable. Only the top genres are listed (the ones users
   // actually search for); niche genres would dilute crawl budget.
+  //
+  // IMPORTANT: the `&` between query params MUST be `&amp;` here. Next.js writes
+  // <loc> values verbatim into the sitemap XML — an unescaped `&` makes the XML
+  // invalid and Google Search Console rejects the entire sitemap with a parse
+  // error. (URLSearchParams.toString() returns a raw `&`, so we can't use it.)
   const CATEGORY_TYPES: ('movie' | 'tv')[] = ['movie', 'tv'];
   // Skip the empty "All Genres" entry; keep only the high-traffic genres.
   const TOP_GENRES = GENRES.filter(([id]) => id !== '');
@@ -73,7 +78,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Genre × type pages: /browse?type=movie&genre=28, etc.
     for (const [genreId] of TOP_GENRES) {
       entries.push({
-        url: `${SITE_URL}/browse?type=${type}&genre=${genreId}`,
+        url: `${SITE_URL}/browse?type=${type}&amp;genre=${genreId}`,
         lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.6,

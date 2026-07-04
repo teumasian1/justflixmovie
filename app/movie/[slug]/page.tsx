@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getDetailsEnriched, getRecommendations } from '@/lib/tmdb';
 import { idFromSlug } from '@/lib/slug';
+import { isBannedId } from '@/lib/banned';
 import { buildDetailMetadata } from '@/lib/detail';
 import DetailView from '@/components/DetailView';
 
@@ -17,7 +18,7 @@ type Params = { params: { slug: string } };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const id = idFromSlug(params.slug);
-  if (!id) return {};
+  if (!id || isBannedId(id)) return {};
   try {
     const item = await getDetailsEnriched('movie', id);
     return buildDetailMetadata('movie', item, `/movie/${params.slug}`);
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function MoviePage({ params }: Params) {
   const id = idFromSlug(params.slug);
-  if (!id) notFound();
+  if (!id || isBannedId(id)) notFound();
   // Fetch the detail (enriched) and the recommendations list in parallel. A
   // failed recommendations fetch degrades to an empty row instead of breaking
   // the page.

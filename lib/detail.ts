@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { TmdbItem, MediaType } from './tmdb';
 import { IMG_URL } from './tmdb';
 import { titleOf, yearOf, buildHref } from './slug';
+import { filterBanned } from './banned';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.justflixmovies.online';
 
@@ -240,12 +241,15 @@ export function buildBreadcrumbJsonLd(
 // the rest of the app uses) so link equity flows and the JSON-LD URLs can never
 // drift from the live <a> links.
 export function buildItemListJsonLd(items: TmdbItem[], listName: string) {
+  // Defense-in-depth: strip banned ids here too so carousel JSON-LD can never
+  // leak them even if an upstream caller forgets to filter.
+  const safe = filterBanned(items);
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: listName,
-    numberOfItems: items.length,
-    itemListElement: items
+    numberOfItems: safe.length,
+    itemListElement: safe
       .filter((i) => i.poster_path && i.id)
       .slice(0, 30)
       .map((item, idx) => {

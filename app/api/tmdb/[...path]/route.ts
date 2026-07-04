@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { filterBanned } from '@/lib/banned';
 
 // Server-side TMDB proxy. The browser calls /api/tmdb/<tmdb-path>?<query> and
 // this handler injects the secret API key, so it never reaches the client.
@@ -30,6 +31,12 @@ export async function GET(
     next: { revalidate: 60 * 60 }, // cache list/search responses for an hour
   });
   const data = await upstream.json();
+
+  // Strip banned titles from list/search responses so the navbar live-search
+  // and any client-side discover refetches can never surface them.
+  if (data && Array.isArray(data.results)) {
+    data.results = filterBanned(data.results);
+  }
 
   return NextResponse.json(data, {
     status: upstream.status,

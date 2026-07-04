@@ -1,3 +1,5 @@
+import { filterBanned } from './banned';
+
 // TMDB client. The fetch helpers here run on the SERVER (server components,
 // generateMetadata, route handlers) so the API key stays out of the browser
 // bundle. The few client-side fetches (search, season/episode lists) go through
@@ -132,16 +134,20 @@ export interface TmdbList {
 
 // ---- Home rows ----
 export function getTrending(type: MediaType) {
-  return tmdb<TmdbList>(`/trending/${type}/week`).then((d) => d.results || []);
+  return tmdb<TmdbList>(`/trending/${type}/week`).then((d) =>
+    filterBanned(d.results || [])
+  );
 }
 
 export async function getTrendingAnime(): Promise<TmdbItem[]> {
   const pages = await Promise.all(
     [1, 2, 3].map((page) => tmdb<TmdbList>('/trending/tv/week', { page }))
   );
-  return pages.flatMap((d) =>
-    (d.results || []).filter(
-      (item) => item.original_language === 'ja' && (item.genre_ids || []).includes(16)
+  return filterBanned(
+    pages.flatMap((d) =>
+      (d.results || []).filter(
+        (item) => item.original_language === 'ja' && (item.genre_ids || []).includes(16)
+      )
     )
   );
 }
@@ -157,9 +163,11 @@ export async function getTrendingKDramas(): Promise<TmdbItem[]> {
       })
     )
   );
-  return pages
-    .flatMap((d) => (d.results || []).filter((item) => (item.genre_ids || []).includes(18)))
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  return filterBanned(
+    pages
+      .flatMap((d) => (d.results || []).filter((item) => (item.genre_ids || []).includes(18)))
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+  );
 }
 
 // ---- Detail ----
@@ -186,7 +194,7 @@ export function getDetailsEnriched(type: MediaType, id: string | number) {
 // related row — also broadens crawlable coverage beyond the sitemap.
 export function getRecommendations(type: MediaType, id: string | number) {
   return tmdb<TmdbList>(`/${type}/${id}/recommendations`, {}, 60 * 60 * 24)
-    .then((d) => d.results || [])
+    .then((d) => filterBanned(d.results || []))
     .catch(() => [] as TmdbItem[]);
 }
 
@@ -209,15 +217,16 @@ export async function getCatalog(
       );
     })
   );
-  return lists.flatMap((d) => d.results || []);
+  return filterBanned(lists.flatMap((d) => d.results || []));
 }
 
 // ---- Discover (browse) ----
-export function discover(
+export async function discover(
   type: MediaType,
   params: Record<string, string | number>
-) {
-  return tmdb<TmdbList>(`/discover/${type}`, params, 60 * 60);
+): Promise<TmdbList> {
+  const data = await tmdb<TmdbList>(`/discover/${type}`, params, 60 * 60);
+  return { ...data, results: filterBanned(data.results || []) };
 }
 
 // ---- Search ----
@@ -228,7 +237,7 @@ export async function searchMulti(query: string): Promise<TmdbItem[]> {
   const q = query.trim();
   if (!q) return [];
   const data = await tmdb<TmdbList>('/search/multi', { query: q }, 60 * 60);
-  return (data.results || [])
+  return filterBanned((data.results || [])
     .filter((i) => i.media_type !== ('person' as MediaType) && i.poster_path)
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0)));
 }

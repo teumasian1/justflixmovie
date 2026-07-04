@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getCatalog, type TmdbItem } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
+import { filterBanned } from '@/lib/banned';
 import { GENRES } from '@/lib/browse';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.justflixmovies.online';
@@ -87,7 +88,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const add = (type: 'movie' | 'tv', items: TmdbItem[]) => {
-    for (const item of items) {
+    for (const item of filterBanned(items)) {
       if (!item.id) continue;
       const href = buildHref(type, item);
       if (seen.has(href)) continue;

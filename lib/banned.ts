@@ -3,6 +3,8 @@
 // the home banner, the sitemap, SEO JSON-LD, and to 404 its direct detail URL.
 export const BANNED_IDS: Set<number> = new Set([
   1083381, // Backrooms
+  1301421, // The Sheep Detectives
+  220102, // Spider-Noir
 ]);
 
 // True when the given TMDB id (string or number) is on the ban list.

@@ -31,10 +31,12 @@
   --hard:          2px solid var(--glass-border);
   --hard-red:      2px solid var(--accent);
 
-  /* Type — Oswald (heavy condensed caps), Space Mono (data/labels), Inter (body). */
-  --font-body:     'Inter', Arial, sans-serif;
-  --font-display:  'Oswald', 'Arial Narrow', Arial, sans-serif;
-  --font-mono:     'Space Mono', ui-monospace, 'SFMono-Regular', monospace;
+  /* Type — Oswald (heavy condensed caps), Space Mono (data/labels), Inter (body).
+     The variables resolve to next/font's self-hosted font-family names applied
+     on <html> (see layout.tsx); the fallbacks stay in case a weight is missing. */
+  --font-body:    var(--font-inter), Arial, sans-serif;
+  --font-display: var(--font-oswald), 'Arial Narrow', Arial, sans-serif;
+  --font-mono:    var(--font-space-mono), ui-monospace, 'SFMono-Regular', monospace;
   --transition:    0.18s cubic-bezier(.4,0,.2,1);
   --ease-out:      cubic-bezier(.2,.7,.2,1);
 

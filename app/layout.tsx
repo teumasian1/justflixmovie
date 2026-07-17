@@ -1,7 +1,35 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Oswald, Space_Mono } from 'next/font/google';
 import Link from 'next/link';
 import Script from 'next/script';
 import './globals.css';
+
+// Self-hosted fonts via next/font: downloaded & inlined at build time, served
+// from the same origin (/_next/static/media/). Zero render-blocking external
+// stylesheets, zero third-party DNS/TLS handshakes, no <script> media-swap
+// hack — the previous fonts.googleapis.com / fonts.gstatic.com chain (2
+// preconnects + a deferred <link> + an inline flip script) is gone entirely.
+// Each font exposes a CSS variable consumed by the --font-* tokens in
+// globals.css. display:'swap' keeps text visible in the system fallback until
+// the web font arrives (no invisible-text / FOIT).
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+const oswald = Oswald({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-oswald',
+  display: 'swap',
+});
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-space-mono',
+  display: 'swap',
+});
 import { ModalProvider } from '@/components/ModalContext';
 import Navbar from '@/components/Navbar';
 import PlayerModal from '@/components/PlayerModal';
@@ -100,38 +128,12 @@ const organizationJsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${inter.variable} ${oswald.variable} ${spaceMono.variable}`}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
-        {/*
-          Google Fonts loaded NON-render-blocking. The CSS is fetched as a
-          `print` stylesheet (the browser deprioritises it and does NOT block
-          first paint waiting on it), then a tiny inline script flips it to
-          `all` as soon as it loads. <noscript> keeps the fonts working with JS
-          disabled. This removes the render-blocking 3rd-party stylesheet from
-          the critical path — the biggest LCP win on this page. Text paints
-          immediately in the system fallback, then swaps to the web font on load
-          with display=swap (no invisible text).
-        */}
-        <link
-          id="gfonts-css"
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
-          media="print"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var l=document.getElementById('gfonts-css');if(!l)return;function s(){l.media='all';}if(l.sheet){s();}else{l.addEventListener('load',s);}})();`,
-          }}
-        />
-        <noscript>
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
-          />
-        </noscript>
         {/*
           Font Awesome loaded non-render-blocking: fetched as a `print`
           stylesheet (the browser deprioritises it and doesn't block paint),

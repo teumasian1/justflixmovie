@@ -81,6 +81,9 @@ export default function Browse({
       const data = await res.json();
       setTotalPages(Math.ceil((data.total_results || 0) / ITEMS_PER_PAGE));
       setItems((data.results || []).slice(0, ITEMS_PER_PAGE));
+    } catch {
+      setItems([]);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }

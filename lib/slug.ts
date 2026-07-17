@@ -11,7 +11,8 @@ export function slugify(text: string): string {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .normalize('NFC')                       // recombine scripts like Hangul jamo → syllables
-    .substring(0, 80);
+    .substring(0, 80)
+    .replace(/^-|-$/g, '');                 // trim leading/trailing hyphen AFTER truncation
 }
 
 export function titleOf(item: { title?: string; name?: string }): string {

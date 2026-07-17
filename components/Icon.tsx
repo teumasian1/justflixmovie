@@ -108,6 +108,7 @@ interface IconProps {
 
 export default function Icon({ name, className, 'aria-hidden': ariaHidden = 'true' }: IconProps) {
   const icon = ICONS[name];
+  if (!icon) return null;
   return (
     <svg
       className={`fa-svg ${icon.cls}${className ? ` ${className}` : ''}`}

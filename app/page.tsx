@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import HeroSearch from '@/components/HeroSearch';
+import Icon from '@/components/Icon';
 
 // Welcome / landing page (site entry point at "/"). Search-first: visitors can
 // look up any title immediately, or follow the call-to-action into the curated
@@ -61,7 +62,7 @@ export default function WelcomePage() {
               during the mobile hydration window can be swallowed (looks like a
               no-op until the second tap). A real <a href> has no such race. */}
           <a href="/home" className="hero-landing-cta">
-            Or browse the curated trending list <i className="fas fa-arrow-right" aria-hidden="true" />
+            Or browse the curated trending list <Icon name="arrow-right" />
           </a>
         </div>
       </section>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { IMG_URL, type TmdbItem } from '@/lib/tmdb';
 import { useModal } from './ModalContext';
+import Icon from './Icon';
 
 // Navbar: logo, Home + Browse links, live multi-search (via /api/tmdb proxy),
 // and the live HUD clock. Search results appear in a compact floating dropdown
@@ -173,7 +174,7 @@ export default function Navbar() {
             href="/browse"
             className={`browse-btn ${pathname === '/browse' && !browseType ? 'active' : ''}`}
           >
-            Browse <i className="fas fa-film" />
+            Browse <Icon name="film" />
           </Link>
           {showSearch && (
             <div
@@ -191,7 +192,7 @@ export default function Navbar() {
                   if (!mobileOpen) setTimeout(() => inputRef.current?.focus(), 60);
                 }}
               >
-                <i className="fas fa-search" />
+                <Icon name="search" />
               </button>
               <input
                 ref={inputRef}
@@ -265,7 +266,7 @@ export default function Navbar() {
                         setMobileOpen(false);
                       }}
                     >
-                      See all results for “{query.trim()}” <i className="fas fa-arrow-right" />
+                      See all results for “{query.trim()}” <Icon name="arrow-right" />
                     </Link>
                   )}
                 </div>

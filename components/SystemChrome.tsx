@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Icon from './Icon';
 
 // Global brutalist chrome: a one-shot boot-sequence overlay on first paint,
 // a fixed scroll-progress hairline that tracks document scroll, and a
@@ -118,7 +119,7 @@ export default function SystemChrome() {
         aria-hidden={!showTop}
         tabIndex={showTop ? 0 : -1}
       >
-        <i className="fas fa-arrow-up" />
+        <Icon name="arrow-up" />
       </button>
     </>
   );

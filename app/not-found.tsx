@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import Icon from '@/components/Icon';
 
 // Custom 404 page. Kept on-brand (brutalist HUD language) and genuinely useful:
 // it offers the three real entry points a visitor is likely to want, instead
@@ -24,13 +25,13 @@ export default function NotFound() {
         </p>
         <div className="not-found-actions">
           <Link href="/home" className="banner-button play">
-            <i className="fas fa-home" /> Go Home
+            <Icon name="home" /> Go Home
           </Link>
           <Link href="/browse" className="banner-button more-info">
-            <i className="fas fa-film" /> Browse Titles
+            <Icon name="film" /> Browse Titles
           </Link>
           <Link href="/search" className="banner-button more-info">
-            <i className="fas fa-search" /> Search
+            <Icon name="search" /> Search
           </Link>
         </div>
       </div>

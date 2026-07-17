@@ -11,6 +11,29 @@
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Inline SVG icon base — replaces the Font Awesome 6 webfont. The <svg>
+   elements rendered by components/Icon.tsx carry class .fa-svg (plus the
+   original FA classes like .fas/.fa-star so existing color rules match).
+   width/height: 1em lets font-size control icon size exactly like the old
+   <i> glyphs. vertical-align mirrors FA's optical baseline. */
+svg.fa-svg {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -.125em;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+/* Mirror the old <i>-targeting rules for the new <svg> icons (the old rules
+   matched element type `i`; these match the .fa-svg class on <svg>). */
+.banner-chip.rating .fa-svg { color: var(--accent); }
+.banner-button .fa-svg { transition: transform var(--transition); }
+.banner-button.play:hover .fa-svg { transform: scale(1.18); }
+.poster-badge .fa-svg { color: #000; font-size: 0.66rem; }
+.copy-link-btn.copied .fa-svg { animation: copyCheck 0.4s var(--ease-out); }
+.mobile-tab .fa-svg { font-size: 1.15rem; }
+.mobile-tab.active .fa-svg { filter: drop-shadow(0 0 8px var(--accent-glow)); }
+
 /* ===== CRIMSON BRUTALIST TOKENS =====
    Sharp geometry (zero radius), hard borders, signal-red accents. Legacy
    effect names (--grad, --accent-glow, glow shadows) are re-mapped to the

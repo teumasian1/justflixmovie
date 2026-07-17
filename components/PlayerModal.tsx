@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { IMG_URL, type TmdbEpisode, type TmdbSeason } from '@/lib/tmdb';
 import { SERVERS, PROBE_SERVERS, getServerUrl, nextServer } from '@/lib/servers';
+import Icon from './Icon';
 import { buildHref, titleOf } from '@/lib/slug';
 import { useModal } from './ModalContext';
 
@@ -456,7 +457,7 @@ export default function PlayerModal() {
                     disabled={epIndex <= 0}
                     onClick={() => setEpisode(episodes[epIndex - 1].episode_number)}
                   >
-                    <i className="fas fa-chevron-left" />
+                    <Icon name="chevron-left" />
                   </button>
                   <span className="ep-nav-text" aria-live="polite">
                     EP <span>{episode}</span>
@@ -468,7 +469,7 @@ export default function PlayerModal() {
                     disabled={epIndex < 0 || epIndex >= episodes.length - 1}
                     onClick={() => setEpisode(episodes[epIndex + 1].episode_number)}
                   >
-                    <i className="fas fa-chevron-right" />
+                    <Icon name="chevron-right" />
                   </button>
                 </div>
               )}
@@ -507,7 +508,7 @@ export default function PlayerModal() {
                   aria-label="Copy link to this title"
                   title="Copy link"
                 >
-                  <i className={`fas ${copied ? 'fa-check' : 'fa-link'}`} aria-hidden="true" />
+                  <Icon name={copied ? 'check' : 'link'} />
                   <span>{copied ? 'Copied!' : 'Copy link'}</span>
                 </button>
               </div>

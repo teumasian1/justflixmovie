@@ -6,6 +6,7 @@ import { buildHref } from '@/lib/slug';
 import { useModal } from './ModalContext';
 import { launchFromPoster } from './launch';
 import StarRating from './StarRating';
+import Icon from './Icon';
 
 // A single poster tile with the hover overlay (title / stars / year / synopsis)
 // and the always-visible rating badge. Rendered as a real <a> linking to the
@@ -77,7 +78,7 @@ export default function PosterCard({ item }: { item: TmdbItem }) {
       />
       {rating > 0 && (
         <div className="poster-badge">
-          <i className="fas fa-star" />
+          <Icon name="star" />
           {rating.toFixed(1)}
         </div>
       )}

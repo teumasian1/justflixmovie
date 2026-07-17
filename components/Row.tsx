@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react';
 import type { TmdbItem } from '@/lib/tmdb';
 import PosterCard from './PosterCard';
+import Icon from './Icon';
 
 // Horizontal content row with scroll buttons + mouse-drag scrolling, mirroring
 // initListNavigation() from the original home.js.
@@ -77,7 +78,7 @@ export default function Row({ title, items }: { title: string; items: TmdbItem[]
       </div>
       <div className="list-wrapper">
         <button className="scroll-btn left" aria-label="Scroll left" onClick={() => scrollByDir(-1)}>
-          <i className="fas fa-chevron-left" />
+          <Icon name="chevron-left" />
         </button>
         <div
           className="list"
@@ -93,7 +94,7 @@ export default function Row({ title, items }: { title: string; items: TmdbItem[]
           ))}
         </div>
         <button className="scroll-btn right" aria-label="Scroll right" onClick={() => scrollByDir(1)}>
-          <i className="fas fa-chevron-right" />
+          <Icon name="chevron-right" />
         </button>
       </div>
     </div>

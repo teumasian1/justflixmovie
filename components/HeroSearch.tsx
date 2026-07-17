@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Icon from './Icon';
 
 // Prominent hero search box for the landing page. A real <form> with a GET
 // action so it works without JS (lands on /search?q=…); progressively enhanced
@@ -21,7 +22,7 @@ export default function HeroSearch({ defaultQuery = '' }: { defaultQuery?: strin
 
   return (
     <form className="hero-search" role="search" action="/search" method="get" onSubmit={submit}>
-      <i className="fas fa-search hero-search-icon" aria-hidden="true" />
+      <Icon name="search" className="hero-search-icon" />
       <input
         type="search"
         name="q"

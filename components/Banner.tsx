@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BACKDROP_URL, type TmdbItem } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
 import { useModal } from './ModalContext';
+import Icon from './Icon';
 
 // Hero banner with a 5s slideshow over the supplied items, ported from the
 // banner logic in home.js. Items are picked server-side and passed in.
@@ -72,7 +73,7 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
         <div className="banner-meta" id="banner-meta">
           {typeof item.vote_average === 'number' && item.vote_average > 0 && (
             <span className="banner-chip rating">
-              <i className="fas fa-star" />
+              <Icon name="star" />
               {item.vote_average.toFixed(1)}
             </span>
           )}
@@ -83,11 +84,11 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
         <div className="banner-buttons">
           {/* Play opens the player modal in-app instantly. */}
           <button className="banner-button play" onClick={() => open(item)}>
-            <i className="fas fa-play" /> Play
+            <Icon name="play" /> Play
           </button>
           {/* More Info opens the shareable detail route (own URL + SEO page). */}
           <Link href={detailHref} className="banner-button more-info">
-            <i className="fas fa-info-circle" /> More Info
+            <Icon name="info-circle" /> More Info
           </Link>
         </div>
       </div>
@@ -105,7 +106,7 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
             aria-label="Previous featured title"
             onClick={() => go(-1)}
           >
-            <i className="fas fa-chevron-left" />
+            <Icon name="chevron-left" />
           </button>
           <button
             type="button"
@@ -113,7 +114,7 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
             aria-label="Next featured title"
             onClick={() => go(1)}
           >
-            <i className="fas fa-chevron-right" />
+            <Icon name="chevron-right" />
           </button>
           <div className="banner-dots" role="tablist" aria-label="Featured titles">
             {slides.map((s, i) => (

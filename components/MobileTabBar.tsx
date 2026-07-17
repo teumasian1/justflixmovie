@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useModal } from './ModalContext';
+import Icon from './Icon';
 
 // Bottom mobile tab bar — a thumb-friendly alternative to reaching the top
 // navbar on phones. Shown only on small screens (via CSS), and mirrors the
@@ -24,15 +25,15 @@ export default function MobileTabBar() {
   return (
     <nav className="mobile-tabbar" aria-label="Primary" hidden={!!item}>
       <Link href="/home" className={`mobile-tab ${isHome ? 'active' : ''}`} aria-current={isHome ? 'page' : undefined} tabIndex={item ? -1 : 0}>
-        <i className="fas fa-home" aria-hidden="true" />
+        <Icon name="home" />
         <span>Home</span>
       </Link>
       <Link href="/browse" className={`mobile-tab ${isBrowse ? 'active' : ''}`} aria-current={isBrowse ? 'page' : undefined} tabIndex={item ? -1 : 0}>
-        <i className="fas fa-film" aria-hidden="true" />
+        <Icon name="film" />
         <span>Browse</span>
       </Link>
       <button type="button" onClick={goSearch} className={`mobile-tab ${isSearch ? 'active' : ''}`} aria-current={isSearch ? 'page' : undefined} tabIndex={item ? -1 : 0}>
-        <i className="fas fa-search" aria-hidden="true" />
+        <Icon name="search" />
         <span>Search</span>
       </button>
     </nav>

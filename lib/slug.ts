@@ -29,8 +29,12 @@ export function buildHref(
 
 // Pull the trailing TMDB id out of a `[slug]` route segment: "avatar-83533" -> "83533".
 export function idFromSlug(slug: string): string | null {
-  const m = decodeURIComponent(slug).match(/(?:.*-)?(\d+)$/);
-  return m ? m[1] : null;
+  try {
+    const m = decodeURIComponent(slug).match(/(?:.*-)?(\d+)$/);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 export function yearOf(dateStr?: string): number | null {

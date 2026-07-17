@@ -660,6 +660,25 @@ body, button, input, select, textarea {
   .detail-seo-overview { text-align: left; }
 }
 
+/* ===== THEMED PICKS (landing page) ===== */
+/* A lightweight section heading above the genre-based rows. The rows themselves
+   reuse the standard .row / .row-header / .list-wrapper styles. */
+.themed-picks { margin: clamp(8px, 2vw, 16px) 0 clamp(28px, 3.4vw, 48px); }
+.themed-picks-header { padding: 0 4%; margin-bottom: 0.25rem; }
+.themed-picks-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+.themed-picks-header p {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  margin-top: 0.25rem;
+}
+
 /* ===== CONTENT ROWS ===== */
 .row { margin: clamp(28px, 3.4vw, 48px) 0; padding: 0; width: 100%; }
 

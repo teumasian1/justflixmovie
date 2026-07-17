@@ -170,6 +170,23 @@ export async function getTrendingKDramas(): Promise<TmdbItem[]> {
   );
 }
 
+// Themed genre picks for the landing page — top-rated movies in a given genre.
+// Sorted by rating with a minimum vote count so the list surfaces genuinely
+// well-regarded titles rather than obscure 10/10s with a handful of votes.
+// Mirrors the discover filters in browse.ts (released + home-viewable) so every
+// result is actually streamable.
+export async function getThemedPicks(genreId: number, limit = 12): Promise<TmdbItem[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const data = await tmdb<TmdbList>('/discover/movie', {
+    with_genres: genreId,
+    sort_by: 'vote_average.desc',
+    'vote_count.gte': 300,
+    release_date_lte: today,
+    with_release_type: '4|5|6',
+  });
+  return filterBanned(data.results || []).slice(0, limit);
+}
+
 // ---- Detail ----
 export function getDetails(type: MediaType, id: string | number) {
   return tmdb<TmdbItem>(`/${type}/${id}`, {}, 60 * 60 * 24);

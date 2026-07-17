@@ -51,8 +51,6 @@ export const metadata: Metadata = {
   applicationName: 'JustFlixMovies',
   description:
     'Watch free movies and TV shows online in HD on JustFlixMovies. Stream trending films, popular series, anime, and Korean dramas instantly — no sign-up, no subscription.',
-  keywords:
-    'watch free movies online, free movies online, watch movies online free, free movies in HD, watch tv shows online free, stream movies free, watch free movies without registration, free anime online, watch korean drama online, trending movies, JustFlixMovies',
   authors: [{ name: 'JustFlixMovies' }],
   creator: 'JustFlixMovies',
   publisher: 'JustFlixMovies',
@@ -134,6 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
@@ -142,13 +141,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        {/* Google Analytics (gtag.js) */}
+        {/* Google Analytics (gtag.js) — lazyOnload so it never competes with
+            hydration or first input. The preconnect above warms the TLS
+            handshake so the script starts fetching the moment it's queued. */}
         <Script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-97H1PC2ED9"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

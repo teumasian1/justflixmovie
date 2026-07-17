@@ -18,10 +18,10 @@ export default function Navbar() {
   const [searching, setSearching] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1); // keyboard-focus result
-  const [clock, setClock] = useState('--:--:--');
   const [browseType, setBrowseType] = useState<string | null>(null); // ?type= on /browse
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const clockRef = useRef<HTMLElement>(null);
   const { open } = useModal();
   const router = useRouter();
   const pathname = usePathname();
@@ -41,9 +41,12 @@ export default function Navbar() {
     setBrowseType(new URLSearchParams(window.location.search).get('type'));
   }, [pathname]);
 
-  // Live HUD clock for the navbar ID rail.
+  // Live HUD clock for the navbar ID rail. Writes directly to the DOM via a ref
+  // (not React state) so the per-second tick never triggers a re-render.
   useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleTimeString('en-GB', { hour12: false }));
+    const el = clockRef.current;
+    if (!el) return;
+    const tick = () => { el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -130,7 +133,7 @@ export default function Navbar() {
     <>
       <header className="navbar">
         <div className="nav-idrail" aria-hidden="true">
-          JUSTFLIX // FREE_STREAM_TERMINAL // <b>{clock}</b>
+          JUSTFLIX // FREE_STREAM_TERMINAL // <b ref={clockRef}>--:--:--</b>
         </div>
         <Link href="/">
           {/*

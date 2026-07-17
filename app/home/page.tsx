@@ -60,6 +60,10 @@ export default async function HomePage() {
   return (
     <>
       <div style={{ display: 'block' }}>
+        {/* Page-level H1 — the banner's movie title is now an h2. This
+            sr-only heading gives crawlers and screen readers a stable,
+            keyword-targeted page heading instead of a rotating title. */}
+        <h1 className="sr-only">Trending Movies &amp; TV Shows to Watch Free Online</h1>
         <Banner items={bannerItems} />
         <WatchHistoryRow />
         <Row title="Trending Movies to Watch Online" items={movieRow} />

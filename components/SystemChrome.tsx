@@ -3,31 +3,15 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icon';
 
-// Global brutalist chrome: a one-shot boot-sequence overlay on first paint,
-// a fixed scroll-progress hairline that tracks document scroll, and a
-// back-to-top button that appears once the user scrolls down. All have their
-// styling defined in globals.css; this component just mounts them and drives
-// the scroll behaviour. Honours reduced-motion by skipping the boot overlay.
+// Global brutalist chrome: a fixed scroll-progress hairline that tracks document
+// scroll, and a back-to-top button that appears once the user scrolls down. All
+// styling is in globals.css; this component just mounts the elements and drives
+// the scroll behaviour. (The old full-screen "boot-seq" overlay was removed —
+// it covered content during the LCP window and could itself become the reported
+// LCP element, inflating the metric.)
 
 export default function SystemChrome() {
-  // Show the boot overlay only on the very first mount of a session, and never
-  // when the user prefers reduced motion. Gated to client so SSR markup stays
-  // identical between server and hydration (overlay is added post-mount).
-  const [showBoot, setShowBoot] = useState(false);
   const [showTop, setShowTop] = useState(false);
-
-  useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) return;
-    // Only on a genuine first load this session — skip on client-side nav.
-    if (sessionStorage.getItem('booted') === '1') return;
-    sessionStorage.setItem('booted', '1');
-    setShowBoot(true);
-    // The CSS animation fades the overlay out at ~0.55s; unmount just after so
-    // it never lingers in the DOM.
-    const id = setTimeout(() => setShowBoot(false), 700);
-    return () => clearTimeout(id);
-  }, []);
 
   // Drive the scroll-progress hairline + the back-to-top visibility. Writes a
   // 0..1 scale into --p, which the CSS maps to transform: scaleX(). rAF-throttled
@@ -106,11 +90,6 @@ export default function SystemChrome() {
   return (
     <>
       <div className="scroll-progress" aria-hidden="true" />
-      {showBoot && (
-        <div className="boot-seq" aria-hidden="true">
-          INITIALISING FREE_STREAM_TERMINAL
-        </div>
-      )}
       <button
         type="button"
         className={`back-to-top ${showTop ? 'is-visible' : ''}`}

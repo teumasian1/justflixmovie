@@ -105,20 +105,29 @@ export default function Browse({
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }, [page]);
 
+  // Build a shareable/crawlable browse URL for a given page number. Shared by
+  // the pagination <a href> links and the URL-sync effect so they never
+  // disagree.
+  const buildBrowseUrl = useCallback(
+    (pageNum: number) => {
+      const params = new URLSearchParams();
+      if (type !== 'movie') params.set('type', type);
+      if (genre) params.set('genre', genre);
+      if (year) params.set('year', year);
+      if (country) params.set('country', country);
+      if (sort !== 'popularity.desc') params.set('sort', sort);
+      if (pageNum > 1) params.set('page', String(pageNum));
+      const qs = params.toString();
+      return qs ? `/browse?${qs}` : '/browse';
+    },
+    [type, genre, year, country, sort]
+  );
+
   // Keep the URL in sync with the active filters so the current view is
-  // shareable/bookmarkable. Skips empty values to keep it tidy.
+  // shareable/bookmarkable.
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (type !== 'movie') params.set('type', type);
-    if (genre) params.set('genre', genre);
-    if (year) params.set('year', year);
-    if (country) params.set('country', country);
-    if (sort !== 'popularity.desc') params.set('sort', sort);
-    if (page > 1) params.set('page', String(page));
-    const qs = params.toString();
-    router.replace(qs ? `/browse?${qs}` : '/browse', { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, genre, year, country, sort, page]);
+    router.replace(buildBrowseUrl(page), { scroll: false });
+  }, [buildBrowseUrl, page, router]);
 
   // Reset to page 1 whenever a filter (not the page) changes.
   const onFilter = (setter: (v: string) => void) => (v: string) => {
@@ -170,24 +179,49 @@ export default function Browse({
       )}
 
       <div className={`browse-results ${loading ? 'is-loading' : ''}`} style={{ display: loading ? 'none' : 'block' }}>
-        <div className="browse-grid grid-reveal">
-          {items.map((item) => (
-            <PosterCard key={item.id} item={{ ...item, media_type: type }} />
-          ))}
-        </div>
+        {items.length === 0 ? (
+          <div className="browse-empty">
+            <p>No titles match these filters.</p>
+            <p>Try widening your search — change the genre, year, or country above, or <a href="/browse">browse all titles</a>.</p>
+          </div>
+        ) : (
+          <div className="browse-grid grid-reveal">
+            {items.map((item) => (
+              <PosterCard key={item.id} item={{ ...item, media_type: type }} />
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="pagination">
-        <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-          &laquo; Prev
-        </button>
-        <div className="page-numbers">
-          <span className="page-info">Page {page} of {totalPages}</span>
+      {totalPages > 0 && (
+        <div className="pagination">
+          {page > 1 ? (
+            <a
+              href={buildBrowseUrl(page - 1)}
+              rel="prev"
+              onClick={(e) => { e.preventDefault(); setPage((p) => Math.max(1, p - 1)); }}
+            >
+              &laquo; Prev
+            </a>
+          ) : (
+            <span className="pag-disabled">&laquo; Prev</span>
+          )}
+          <div className="page-numbers">
+            <span className="page-info">Page {page} of {totalPages}</span>
+          </div>
+          {page < totalPages ? (
+            <a
+              href={buildBrowseUrl(page + 1)}
+              rel="next"
+              onClick={(e) => { e.preventDefault(); setPage((p) => p + 1); }}
+            >
+              Next &raquo;
+            </a>
+          ) : (
+            <span className="pag-disabled">Next &raquo;</span>
+          )}
         </div>
-        <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages}>
-          Next &raquo;
-        </button>
-      </div>
+      )}
     </div>
   );
 }

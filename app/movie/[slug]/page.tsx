@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getDetailsEnriched, getRecommendations } from '@/lib/tmdb';
-import { idFromSlug } from '@/lib/slug';
+import { idFromSlug, buildHref } from '@/lib/slug';
 import { isBannedId } from '@/lib/banned';
 import { buildDetailMetadata } from '@/lib/detail';
 import DetailView from '@/components/DetailView';
@@ -21,7 +21,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!id || isBannedId(id)) return {};
   try {
     const item = await getDetailsEnriched('movie', id);
-    return buildDetailMetadata('movie', item, `/movie/${params.slug}`);
+    // Always derive the canonical path from the item's title — never from the
+    // incoming request slug — so every URL variant emits the same canonical.
+    const canonicalPath = buildHref('movie', item);
+    return buildDetailMetadata('movie', item, canonicalPath);
   } catch {
     return {};
   }
@@ -38,7 +41,14 @@ export default async function MoviePage({ params }: Params) {
     getRecommendations('movie', id),
   ]);
   if (!item) notFound();
+  // Enforce a single canonical URL: if the incoming slug doesn't match the
+  // canonical slug derived from the title, 308-redirect. Collapses all variant
+  // URLs (/movie/83533, /movie/wrong-title-83533, …) to one canonical path.
+  const canonicalPath = buildHref('movie', item);
+  if (canonicalPath !== `/movie/${params.slug}`) {
+    permanentRedirect(canonicalPath);
+  }
   return (
-    <DetailView type="movie" item={item} path={`/movie/${params.slug}`} related={related} />
+    <DetailView type="movie" item={item} path={canonicalPath} related={related} />
   );
 }

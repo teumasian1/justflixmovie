@@ -3,11 +3,14 @@
 
 export function slugify(text: string): string {
   return (text || '')
+    .normalize('NFD')                      // decompose accented chars (é → e + ◌́)
+    .replace(/\p{M}/gu, '')                 // strip combining marks left by NFD
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')      // keep Unicode letters/numbers; strip symbols/punct
     .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
+    .normalize('NFC')                       // recombine scripts like Hangul jamo → syllables
     .substring(0, 80);
 }
 
@@ -20,7 +23,7 @@ export function buildHref(
   item: { id: number; title?: string; name?: string }
 ): string {
   const slug = slugify(titleOf(item));
-  // `.*-id` — keep the trailing id even when the slug is empty (non-ASCII titles).
+  // `.*-id` — keep the trailing id; slug may be empty only for symbol-only titles.
   return `/${type}/${slug ? `${slug}-` : ''}${item.id}`;
 }
 

@@ -392,7 +392,7 @@ body, button, input, select, textarea {
 }
 @keyframes recBlink { 50% { opacity: 0.25; } }
 
-.banner-content h1 {
+.banner-content h2 {
   font-family: var(--font-display);
   font-size: clamp(2.6rem, 7vw, 5.2rem);
   font-weight: 700;
@@ -416,7 +416,7 @@ body, button, input, select, textarea {
   transition: background-position 0.95s var(--ease-out), text-shadow 0.95s ease;
   cursor: default;
 }
-.banner-content h1:hover {
+.banner-content h2:hover {
   background-position: 0 0;
   /* RGB channel-split + bloom on hover (transitioned, so no entrance replay). */
   text-shadow:
@@ -426,7 +426,7 @@ body, button, input, select, textarea {
     0 0 36px rgba(229,72,77,0.20);
 }
 /* Red underscore slash beneath the hero title. */
-.banner-content h1::after {
+.banner-content h2::after {
   content: '';
   display: block;
   width: 96px; height: 6px;
@@ -563,7 +563,7 @@ body, button, input, select, textarea {
 /* Staged entrance */
 .banner-content > * { animation: bannerRise 0.7s var(--ease-out) both; }
 .banner-kicker { animation-delay: 0.02s; }
-.banner-content h1 { animation-delay: 0.08s; }
+.banner-content h2 { animation-delay: 0.08s; }
 .banner-content p { animation-delay: 0.16s; }
 .banner-meta { animation-delay: 0.22s; }
 .banner-buttons { animation-delay: 0.30s; }
@@ -950,6 +950,21 @@ body, button, input, select, textarea {
 [data-theme="light"] .star.empty { color: #c4c6d8; }
 
 /* ===== BROWSE SECTION ===== */
+/* Empty state — shown when a filter combo returns no results. */
+.browse-empty {
+  padding: 60px 4%; text-align: center;
+}
+.browse-empty p {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.88rem; line-height: 1.7;
+  margin-bottom: 0.3rem;
+}
+.browse-empty a {
+  color: var(--accent); text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+}
+.browse-empty a:hover { opacity: 0.8; }
 #browse-content {
   padding: 28px 4%;
   padding-left: max(4%, env(safe-area-inset-left, 0px));
@@ -1171,6 +1186,24 @@ body, button, input, select, textarea {
 }
 .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
 .pagination .page-info { color: var(--text-secondary); font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.06em; }
+/* Crawlable pagination <a> links — mirror the <button> styling so the swap
+   from <button onClick> to <a href> is visually seamless. The existing button
+   rules above become dead code (no <button> in pagination anymore) but are
+   left in place to avoid touching unrelated selectors. */
+.pagination a {
+  padding: 9px 18px; border: var(--hard);
+  background: transparent;
+  color: var(--text-primary); cursor: pointer;
+  font-family: var(--font-mono); font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 0.82rem; text-decoration: none;
+  display: inline-flex; align-items: center;
+  transition: border-color var(--transition), color var(--transition), box-shadow var(--transition);
+}
+.pagination a:hover { border-color: var(--accent); color: var(--accent); }
+.pagination a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; box-shadow: var(--neon-glow); }
+.pagination a:active { transform: translateY(2px); }
+.pagination .pag-disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
 
 /* ===== VIDEO MODAL ===== */
 .modal {
@@ -1784,7 +1817,7 @@ body, button, input, select, textarea {
   .theme-toggle { width: 40px; height: 40px; flex-basis: 40px; }
 
   .banner { height: 56vh; padding: 20px 18px 36px; }
-  .banner-content h1 { font-size: clamp(1.6rem, 8vw, 2.2rem); }
+  .banner-content h2 { font-size: clamp(1.6rem, 8vw, 2.2rem); }
   .banner-content p { font-size: 0.86rem; }
   .banner-buttons { flex-direction: column; gap: 8px; }
   .banner-button { width: 100%; padding: 12px 20px; }
@@ -1849,7 +1882,7 @@ body, button, input, select, textarea {
   .theme-toggle { width: 38px; height: 38px; flex-basis: 38px; }
 
   .banner { height: 78vh; padding: 16px 18px 28px; }
-  .banner-content h1 { font-size: clamp(1.4rem, 5vw, 2rem); margin-bottom: 0.5rem; }
+  .banner-content h2 { font-size: clamp(1.4rem, 5vw, 2rem); margin-bottom: 0.5rem; }
   .banner-content p { font-size: 0.82rem; -webkit-line-clamp: 2; line-clamp: 2; margin-bottom: 0.75rem; }
   .banner-meta { margin-bottom: 0.9rem; }
   .banner-buttons { flex-direction: row; gap: 8px; }

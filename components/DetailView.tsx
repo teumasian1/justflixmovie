@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { TmdbItem, MediaType } from '@/lib/tmdb';
 import { IMG_URL } from '@/lib/tmdb';
 import { titleOf, yearOf } from '@/lib/slug';
-import { runtimeLabel, buildJsonLd, buildBreadcrumbJsonLd, buildItemListJsonLd } from '@/lib/detail';
+import { runtimeLabel, synopsisOf, buildJsonLd, buildBreadcrumbJsonLd, buildItemListJsonLd } from '@/lib/detail';
 import Row from './Row';
 import AutoOpen from './AutoOpen';
 
@@ -28,7 +28,7 @@ export default function DetailView({
   const title = titleOf(item);
   const year = yearOf(item.release_date || item.first_air_date);
   const poster = item.poster_path ? `${IMG_URL}${item.poster_path}` : '/placeholder.jpg';
-  const overview = item.overview || `Watch ${title} online free in HD on JustFlixMovies.`;
+  const overview = synopsisOf(item, type);
   const genres = (item.genres || []).map((g) => g.name).join(', ');
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const typeLabel = type === 'tv' ? 'TV Series' : 'Movie';
@@ -91,6 +91,7 @@ export default function DetailView({
             alt={`${title} poster`}
             width={300}
             height={450}
+            fetchPriority="high"
           />
           <div className="detail-seo-body">
             <h1>

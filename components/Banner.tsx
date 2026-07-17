@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { BACKDROP_URL, type TmdbItem } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
@@ -20,7 +20,7 @@ const SLIDE_MS = 5000;
 export default function Banner({ items }: { items: TmdbItem[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [clock, setClock] = useState('--:--:--');
+  const clockRef = useRef<HTMLElement>(null);
   const { open } = useModal();
 
   const slides = items.filter((i) => i.backdrop_path);
@@ -36,9 +36,12 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
     return () => clearInterval(id);
   }, [slides.length, paused]);
 
-  // Live HUD clock for the hero telemetry readout.
+  // Live HUD clock for the hero telemetry readout. Writes directly to the DOM
+  // via a ref (not React state) so the per-second tick never triggers a render.
   useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleTimeString('en-GB', { hour12: false }));
+    const el = clockRef.current;
+    if (!el) return;
+    const tick = () => { el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -68,7 +71,7 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
       <div className="banner-scan" aria-hidden="true" />
       <div className="banner-content">
         <span className="banner-kicker"><span className="kicker-type">Featured</span></span>
-        <h1 id="banner-title">{title}</h1>
+        <h2 id="banner-title">{title}</h2>
         <p id="banner-overview">{item.overview}</p>
         <div className="banner-meta" id="banner-meta">
           {typeof item.vote_average === 'number' && item.vote_average > 0 && (
@@ -94,7 +97,7 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
       </div>
       <div className="banner-telemetry" aria-hidden="true">
         LAT <b>{lat}</b> // LON <b>{lon}</b><br />
-        FEED <b>{String(index + 1).padStart(2, '0')}/{String(slides.length).padStart(2, '0')}</b> // <b>{clock}</b>
+        FEED <b>{String(index + 1).padStart(2, '0')}/{String(slides.length).padStart(2, '0')}</b> // <b ref={clockRef}>--:--:--</b>
       </div>
 
       {/* Slideshow controls — only when there is more than one slide. */}

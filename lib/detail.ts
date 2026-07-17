@@ -25,6 +25,52 @@ export function runtimeLabel(item: TmdbItem, type: MediaType): string {
   return '';
 }
 
+// Generate a substantive, title-specific synopsis from the enriched TMDB data
+// when the overview field is empty. Without this, overview-less titles render
+// a single boilerplate sentence — a thin-content risk. Uses cast, genres,
+// runtime, and release info to build 2–3 unique sentences so every detail page
+// has substantial body text for crawlers.
+export function synopsisOf(item: TmdbItem, type: MediaType): string {
+  if (item.overview?.trim()) return item.overview;
+
+  const title = titleOf(item);
+  const year = yearOf(item.release_date || item.first_air_date);
+  const typeLabel = type === 'tv' ? 'series' : 'movie';
+  const genres = (item.genres || []).slice(0, 3).map((g) => g.name);
+  const cast = (item.credits?.cast || []).slice(0, 3).map((c) => c.name);
+  const crew = item.credits?.crew || [];
+  const directors = type === 'movie'
+    ? crew.filter((c) => c.job === 'Director').map((c) => c.name).slice(0, 1)
+    : crew.filter((c) => ['Creator', 'Series Creator'].includes(c.job || '')).map((c) => c.name).slice(0, 1);
+  const rt = runtimeLabel(item, type);
+  const langs = (item.spoken_languages || []).slice(0, 2).map((l) => l.english_name).filter(Boolean);
+
+  const parts: string[] = [];
+
+  // "{Title} ({year}) is a {genres} {type} available to stream free…"
+  const article = genres.length && /^[aeiou]/i.test(genres[0]) ? 'an' : 'a';
+  const genreClause = genres.length ? ` ${genres.join(', ').toLowerCase()}` : '';
+  parts.push(
+    `${title}${year ? ` (${year})` : ''} is ${article}${genreClause} ${typeLabel} available to stream free in HD on JustFlixMovies — no sign-up, no subscription.`
+  );
+
+  // Credits: "Directed by X and starring Y, Z."
+  if (directors.length || cast.length) {
+    const credits: string[] = [];
+    if (directors.length) credits.push(`${type === 'tv' ? 'Created' : 'Directed'} by ${directors[0]}`);
+    if (cast.length) credits.push(`starring ${cast.join(', ')}`);
+    parts.push(credits.join(' and ') + '.');
+  }
+
+  // Specs: runtime + language.
+  const specs: string[] = [];
+  if (rt) specs.push(rt);
+  if (langs.length) specs.push(langs.join('/'));
+  if (specs.length) parts.push(`${type === 'tv' ? 'The series' : 'The film'} runs ${specs.join(' in ')}.`);
+
+  return parts.join(' ');
+}
+
 // Per-title metadata, mirroring scripts/prerender.mjs buildPage().
 export function buildDetailMetadata(
   type: MediaType,
@@ -35,7 +81,8 @@ export function buildDetailMetadata(
   const year = yearOf(item.release_date || item.first_air_date);
   const poster = item.poster_path ? `${IMG_URL}${item.poster_path}` : '/placeholder.jpg';
   const url = `${SITE_URL}${path}`;
-  const overview = item.overview || `Watch ${title} online free in HD on JustFlixMovies.`;
+  const hasOverview = !!item.overview?.trim();
+  const overview = synopsisOf(item, type);
 
   const base = `${title}${year ? ` (${year})` : ''}`;
   // OG/Twitter titles aren't length-constrained, so keep the fully descriptive
@@ -44,7 +91,9 @@ export function buildDetailMetadata(
   // would overflow, always keeping the brand suffix.
   const ogTitle = `${base} - Watch Free in HD | JustFlixMovies`;
   const pageTitle = ogTitle.length <= 60 ? ogTitle : `${base} | JustFlixMovies`;
-  const metaDesc = truncate(`Watch ${base} online free in HD. ${overview}`);
+  const metaDesc = hasOverview
+    ? truncate(`Watch ${base} online free in HD. ${overview}`)
+    : truncate(overview);
 
   // TMDB posters are served at the w500 size → 500×750 (2:3). Declaring the
   // dimensions lets social platforms render the card without a reflow/refetch.
@@ -141,7 +190,7 @@ export function buildJsonLd(type: MediaType, item: TmdbItem, path: string) {
     '@context': 'https://schema.org',
     '@type': type === 'tv' ? 'TVSeries' : 'Movie',
     name: title,
-    description: item.overview || `Watch ${title} online free in HD.`,
+    description: synopsisOf(item, type),
     // ImageObject (with explicit dimensions) instead of a bare string: Google
     // requires this form for the Movie rich result's image eligibility.
     image: {

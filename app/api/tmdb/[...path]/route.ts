@@ -40,6 +40,6 @@ export async function GET(
 
   return NextResponse.json(data, {
     status: upstream.status,
-    headers: { 'cache-control': 'public, max-age=0, s-maxage=3600' },
+    headers: { 'cache-control': 'public, max-age=0, s-maxage=3600', 'x-robots-tag': 'noindex' },
   });
 }

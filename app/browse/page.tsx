@@ -41,7 +41,7 @@ function browseCanonical(f: BrowseFilters): string {
   return `/browse?${c.toString()}`;
 }
 
-export function generateMetadata({ searchParams }: Sp): Metadata {
+export async function generateMetadata({ searchParams }: Sp): Promise<Metadata> {
   // normalize searchParams (Next may hand us arrays for repeated keys)
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(searchParams)) {
@@ -50,11 +50,25 @@ export function generateMetadata({ searchParams }: Sp): Metadata {
   }
   const f = filtersFromParams(sp);
   const label = filtersLabel(f);
+
+  // Check whether this filter combo actually returns results. Next.js
+  // deduplicates this fetch with the identical call in BrowsePage, so it
+  // doesn't cost a second network request.
+  let hasResults = true;
+  try {
+    const data = await discover(f.type, discoverParams(f));
+    hasResults = (data.results || []).length > 0;
+  } catch {
+    hasResults = false;
+  }
+
   return {
     title: `${label} — Watch Free Online`,
     description: `${label} available to stream free in HD on JustFlixMovies — no sign-up, no subscription. Filter by genre, year, country, and rating.`,
     alternates: { canonical: browseCanonical(f) },
-    robots: { index: true, follow: true },
+    robots: (!hasResults || f.year || f.country)
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
   };
 }
 

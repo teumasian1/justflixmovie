@@ -250,11 +250,68 @@ export async function discover(
 // Server-side multi-search (movies + TV + people). Used by the /search results
 // page. People and result-less entries are filtered out; we keep only titles
 // with a poster so the grid renders cleanly. Cached for an hour like browse.
+//
+// We also fold in titles credited to people whose name matches the query
+// (directors, actors, artists) — e.g. searching "Nolan" returns his films
+// alongside any title literally named "Nolan". This makes the search button
+// useful for looking up a person's body of work, not just title names.
 export async function searchMulti(query: string): Promise<TmdbItem[]> {
   const q = query.trim();
   if (!q) return [];
-  const data = await tmdb<TmdbList>('/search/multi', { query: q }, 60 * 60);
-  return filterBanned((data.results || [])
-    .filter((i) => i.media_type !== ('person' as MediaType) && i.poster_path)
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0)));
+
+  const [multiData, personTitles] = await Promise.all([
+    tmdb<TmdbList>('/search/multi', { query: q }, 60 * 60),
+    searchPersonTitles(q),
+  ]);
+
+  const titleHits = (multiData.results || []).filter(
+    (i) => i.media_type !== ('person' as MediaType) && i.poster_path
+  );
+
+  // Merge and dedupe by media_type+id (a title can come from both sources).
+  const seen = new Set<string>();
+  const merged = [...titleHits, ...personTitles].filter((i) => {
+    const key = `${i.media_type}-${i.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return filterBanned(merged.sort((a, b) => (b.popularity || 0) - (a.popularity || 0)));
+}
+
+// Titles credited to the top people matching `query`. Looks up people via
+// /search/person, takes the most popular few, then pulls their combined_credits
+// (cast + crew) and keeps only movie/TV titles with a poster. Resilient to
+// per-person failures so one bad lookup can't blank the whole search.
+export async function searchPersonTitles(query: string, limit = 2): Promise<TmdbItem[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const people = await tmdb<TmdbList>('/search/person', { query: q }, 60 * 60).catch(
+    () => ({ results: [] } as TmdbList)
+  );
+  const topPeople = (people.results || [])
+    .filter((p) => (p.popularity || 0) > 1)
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+    .slice(0, limit);
+  if (topPeople.length === 0) return [];
+
+  const credits = await Promise.all(
+    topPeople.map((p) =>
+      tmdb<{ cast: TmdbItem[]; crew: TmdbItem[] }>(
+        `/person/${p.id}/combined_credits`,
+        {},
+        60 * 60
+      ).catch(() => ({ cast: [], crew: [] }))
+    )
+  );
+
+  return filterBanned(
+    credits
+      .flatMap((c) => [...(c.cast || []), ...(c.crew || [])])
+      .filter(
+        (i) =>
+          (i.media_type === 'movie' || i.media_type === 'tv') && i.poster_path
+      )
+  );
 }

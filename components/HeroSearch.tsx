@@ -27,8 +27,8 @@ export default function HeroSearch({ defaultQuery = '' }: { defaultQuery?: strin
         type="search"
         name="q"
         className="hero-search-input"
-        placeholder="Search movies, TV shows, anime…"
-        aria-label="Search movies and TV shows"
+        placeholder="Search movies, TV shows, directors, actors…"
+        aria-label="Search movies, TV shows, actors and directors"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         autoComplete="off"

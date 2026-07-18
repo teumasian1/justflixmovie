@@ -51,7 +51,7 @@ export default async function SearchPage({
 
       {!q && (
         <p className="search-page-empty">
-          Type a movie, TV show, anime, or Korean drama above to start watching free in HD.
+          Type a movie, TV show, actor, or director above to start watching free in HD.
         </p>
       )}
 

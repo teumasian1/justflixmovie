@@ -11,8 +11,8 @@ export interface ServerDef {
 }
 
 export const SERVERS: ServerDef[] = [
-  { name: 'Server 1', id: 'vidspark.to', url: 'https://vidspark.to' },
-  { name: 'Server 2', id: 'cinesrc.st', url: 'https://cinesrc.st' },
+  { name: 'Server 1', id: 'cinesrc.st', url: 'https://cinesrc.st' },
+  { name: 'Server 2', id: 'vidspark.to', url: 'https://vidspark.to' },
   { name: 'Server 3', id: 'cinemaos.tech', url: 'https://cinemaos.tech' },
   { name: 'Server 4', id: 'embed.filmu.in', url: 'https://embed.filmu.in' },
   { name: 'Server 5', id: 'vidup.to', url: 'https://vidup.to' },
@@ -23,8 +23,8 @@ export const SERVERS: ServerDef[] = [
 // Servers probed (HEAD) on open to auto-pick a working default, mirroring the
 // original behaviour.
 export const PROBE_SERVERS = [
-  'vidspark.to',
   'cinesrc.st',
+  'vidspark.to',
   'cinemaos.tech',
   'embed.filmu.in',
   'vidup.to',

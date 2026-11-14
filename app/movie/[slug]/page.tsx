@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { getDetailsEnriched, getRecommendations } from '@/lib/tmdb';
+import { getDetailsEnriched, getRecommendations, getCollection } from '@/lib/tmdb';
 import { idFromSlug, buildHref } from '@/lib/slug';
 import { isBannedId } from '@/lib/banned';
 import { buildDetailMetadata } from '@/lib/detail';
@@ -41,6 +41,12 @@ export default async function MoviePage({ params }: Params) {
     getRecommendations('movie', id),
   ]);
   if (!item) notFound();
+
+  // If this movie belongs to a franchise/universe, fetch the other titles in order.
+  const collection = item.belongs_to_collection?.id
+    ? await getCollection(item.belongs_to_collection.id)
+    : null;
+
   // Enforce a single canonical URL: if the incoming slug doesn't match the
   // canonical slug derived from the title, 308-redirect. Collapses all variant
   // URLs (/movie/83533, /movie/wrong-title-83533, …) to one canonical path.
@@ -49,6 +55,12 @@ export default async function MoviePage({ params }: Params) {
     permanentRedirect(canonicalPath);
   }
   return (
-    <DetailView type="movie" item={item} path={canonicalPath} related={related} />
+    <DetailView
+      type="movie"
+      item={item}
+      path={canonicalPath}
+      related={related}
+      collection={collection}
+    />
   );
 }

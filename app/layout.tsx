@@ -33,6 +33,10 @@ const spaceMono = Space_Mono({
 import { ModalProvider } from '@/components/ModalContext';
 import Navbar from '@/components/Navbar';
 import PlayerModal from '@/components/PlayerModal';
+import SurpriseModal from '@/components/SurpriseModal';
+import TrailerModal from '@/components/TrailerModal';
+import ShortcutsModal from '@/components/ShortcutsModal';
+import ShortcutsTrigger from '@/components/ShortcutsTrigger';
 import Popunder from '@/components/Popunder';
 import SystemChrome from '@/components/SystemChrome';
 import MobileTabBar from '@/components/MobileTabBar';
@@ -131,6 +135,42 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${oswald.variable} ${spaceMono.variable}`}
     >
       <head>
+        {/* Error shield: intercepts and suppresses third-party ad network, extension,
+            or cross-origin postMessage errors (e.g. M_ID) before Next.js error overlay traps them */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window === 'undefined') return;
+                function shouldSuppress(msg, src) {
+                  var m = String(msg || '');
+                  var s = String(src || '');
+                  return m.indexOf('M_ID') !== -1 ||
+                         m.indexOf('antiadblock') !== -1 ||
+                         s.indexOf('antiadblock') !== -1 ||
+                         s.indexOf('cloudfront') !== -1 ||
+                         s.indexOf('extension://') !== -1;
+                }
+                window.addEventListener('error', function(e) {
+                  var msg = (e && (e.message || (e.error && e.error.message))) || '';
+                  var src = (e && e.filename) || '';
+                  if (shouldSuppress(msg, src)) {
+                    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                    if (e.preventDefault) e.preventDefault();
+                    return true;
+                  }
+                }, true);
+                window.addEventListener('unhandledrejection', function(e) {
+                  var reason = (e && (e.reason && (e.reason.message || e.reason))) || '';
+                  if (shouldSuppress(reason, '')) {
+                    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                    if (e.preventDefault) e.preventDefault();
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <script
@@ -168,6 +208,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main id="main-content">{children}</main>
           <Footer />
           <PlayerModal />
+          <SurpriseModal />
+          <TrailerModal />
+          <ShortcutsModal />
           <SystemChrome />
           <MobileTabBar />
         </ModalProvider>
@@ -190,6 +233,7 @@ function Footer() {
           <Link href="/browse?type=tv">Watch TV Shows</Link>
           <Link href="/browse">Browse Genres</Link>
           <Link href="/search">Search Titles</Link>
+          <ShortcutsTrigger />
         </div>
       </div>
     </footer>

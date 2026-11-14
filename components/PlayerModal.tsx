@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { IMG_URL, type TmdbEpisode, type TmdbSeason } from '@/lib/tmdb';
 import { SERVERS, PROBE_SERVERS, getServerUrl, nextServer } from '@/lib/servers';
 import Icon from './Icon';
-import { buildHref, titleOf } from '@/lib/slug';
+import { buildHref, titleOf, yearOf } from '@/lib/slug';
 import { useModal } from './ModalContext';
+import { updateHistoryProgress } from '@/lib/history';
+import { isInWatchlist, toggleWatchlist, WATCHLIST_EVENT } from '@/lib/watchlist';
 
 // The streaming player modal. Ported from js/videoModal.js: server dropdown
 // (incl. Server 5 / cinemaos.tech), per-server auto-probe, season tabs +
@@ -45,21 +47,127 @@ function copyToClipboard(text: string): Promise<void> {
   });
 }
 
+function formatSleep(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
 export default function PlayerModal() {
-  const { item, typeDelay, fromRoute, close } = useModal();
+  const { item, typeDelay, fromRoute, initialSeason, initialEpisode, close } = useModal();
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   // The element that had focus before the modal opened — restored on close.
   const lastFocusedRef = useRef<HTMLElement | null>(null);
 
-  const [server, setServer] = useState<string>('vidup.to');
+  const [server, setServer] = useState<string>(SERVERS[0].id);
   const [seasons, setSeasons] = useState<TmdbSeason[]>([]);
   const [season, setSeason] = useState<number>(1);
   const [episodes, setEpisodes] = useState<TmdbEpisode[]>([]);
   const [episode, setEpisode] = useState<number>(1);
   const [iframeUrl, setIframeUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [copiedEp, setCopiedEp] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+
+  // Sleep timer states
+  const [sleepTarget, setSleepTarget] = useState<number | null>(null);
+  const [sleepRemaining, setSleepRemaining] = useState<number | null>(null);
+  const [isSleeping, setIsSleeping] = useState(false);
+
+  // Resume season / episode if specified
+  useEffect(() => {
+    if (initialSeason) setSeason(initialSeason);
+    if (initialEpisode) setEpisode(initialEpisode);
+  }, [initialSeason, initialEpisode]);
+
+  // Update progress in history
+  useEffect(() => {
+    if (!item?.id || !item?.media_type || item.media_type !== 'tv') return;
+    updateHistoryProgress(item.id, 'tv', season, episode);
+  }, [item?.id, item?.media_type, season, episode]);
+
+  useEffect(() => {
+    if (!item?.id) return;
+    const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+    const sync = () => setInWatchlist(isInWatchlist(item.id, mediaType));
+    sync();
+    window.addEventListener(WATCHLIST_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(WATCHLIST_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, [item?.id, item?.media_type, item?.first_air_date]);
+
+  const toggleModalWatchlist = () => {
+    if (!item) return;
+    const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+    toggleWatchlist({ ...item, media_type: mediaType });
+  };
+
+  const cycleSleepTimer = () => {
+    if (!sleepTarget) {
+      const target = Date.now() + 15 * 60 * 1000;
+      setSleepTarget(target);
+      setSleepRemaining(15 * 60);
+    } else {
+      const rem = Math.round((sleepTarget - Date.now()) / 60000);
+      if (rem <= 15) {
+        setSleepTarget(Date.now() + 30 * 60 * 1000);
+        setSleepRemaining(30 * 60);
+      } else if (rem <= 30) {
+        setSleepTarget(Date.now() + 45 * 60 * 1000);
+        setSleepRemaining(45 * 60);
+      } else if (rem <= 45) {
+        setSleepTarget(Date.now() + 60 * 60 * 1000);
+        setSleepRemaining(60 * 60);
+      } else if (rem <= 60) {
+        setSleepTarget(Date.now() + 90 * 60 * 1000);
+        setSleepRemaining(90 * 60);
+      } else {
+        setSleepTarget(null);
+        setSleepRemaining(null);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!sleepTarget) return;
+    const interval = setInterval(() => {
+      const sec = Math.max(0, Math.round((sleepTarget - Date.now()) / 1000));
+      setSleepRemaining(sec);
+      if (sec <= 0) {
+        setIsSleeping(true);
+        setSleepTarget(null);
+        setSleepRemaining(null);
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sleepTarget]);
+
+  const nextEpisode = useCallback(() => {
+    if (!episodes.length) return;
+    const curIdx = episodes.findIndex((e) => e.episode_number === episode);
+    if (curIdx >= 0 && curIdx < episodes.length - 1) {
+      setEpisode(episodes[curIdx + 1].episode_number);
+    }
+  }, [episodes, episode]);
+
+  const prevEpisode = useCallback(() => {
+    if (!episodes.length) return;
+    const curIdx = episodes.findIndex((e) => e.episode_number === episode);
+    if (curIdx > 0) {
+      setEpisode(episodes[curIdx - 1].episode_number);
+    }
+  }, [episodes, episode]);
+
+  const nextEpisodeRef = useRef(nextEpisode);
+  nextEpisodeRef.current = nextEpisode;
+  const prevEpisodeRef = useRef(prevEpisode);
+  prevEpisodeRef.current = prevEpisode;
 
   // Typewriter output.
   const [typedTitle, setTypedTitle] = useState('');
@@ -100,6 +208,25 @@ export default function PlayerModal() {
       if (e.key === 'Escape') {
         e.preventDefault();
         dismissRef.current?.();
+      } else if (['1', '2', '3', '4', '5', '6', '7'].includes(e.key)) {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          e.preventDefault();
+          const idx = parseInt(e.key, 10) - 1;
+          if (SERVERS[idx]) setServer(SERVERS[idx].id);
+        }
+      } else if (e.key === ']' || e.code === 'BracketRight') {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          e.preventDefault();
+          nextEpisodeRef.current();
+        }
+      } else if (e.key === '[' || e.code === 'BracketLeft') {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          e.preventDefault();
+          prevEpisodeRef.current();
+        }
       } else if (e.key === 'Tab') {
         // Trap focus within the dialog: wrap from last→first and first→last.
         const root = dialogRef.current;
@@ -254,6 +381,19 @@ export default function PlayerModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id]);
 
+  const copyEpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyEpLink = useCallback(() => {
+    if (!item) return;
+    const base = `${window.location.origin}${buildHref(type, item)}`;
+    const url = type === 'tv' ? `${base}?s=${season}&e=${episode}` : base;
+    copyToClipboard(url).finally(() => {
+      setCopiedEp(true);
+      if (copyEpTimer.current) clearTimeout(copyEpTimer.current);
+      copyEpTimer.current = setTimeout(() => setCopiedEp(false), 1600);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id, type, season, episode]);
+
   useEffect(() => () => {
     if (copyTimer.current) clearTimeout(copyTimer.current);
   }, []);
@@ -299,7 +439,7 @@ export default function PlayerModal() {
   useEffect(() => {
     if (!item) return;
     let cancelled = false;
-    setServer('vidup.to');
+    setServer(SERVERS[0].id);
 
     (async () => {
       const probe = async (id: string) => {
@@ -363,7 +503,15 @@ export default function PlayerModal() {
         if (cancelled) return;
         const eps = data.episodes || [];
         setEpisodes(eps);
-        setEpisode(eps.length ? eps[0].episode_number : 1);
+        setEpisode((prev) => {
+          if (initialEpisode && eps.some((e) => e.episode_number === initialEpisode)) {
+            return initialEpisode;
+          }
+          if (eps.some((e) => e.episode_number === prev)) {
+            return prev;
+          }
+          return eps.length ? eps[0].episode_number : 1;
+        });
       } catch {
         if (!cancelled) setEpisodes([]);
       }
@@ -386,6 +534,7 @@ export default function PlayerModal() {
 
   const isTV = type === 'tv';
   const epIndex = episodes.findIndex((e) => e.episode_number === episode);
+  const nextEp = isTV && epIndex >= 0 && epIndex < episodes.length - 1 ? episodes[epIndex + 1] : null;
 
   const onIframeError = () => {
     const fallback = nextServer(server);
@@ -455,7 +604,7 @@ export default function PlayerModal() {
                     title="Previous Episode"
                     aria-label="Previous Episode"
                     disabled={epIndex <= 0}
-                    onClick={() => setEpisode(episodes[epIndex - 1].episode_number)}
+                    onClick={prevEpisode}
                   >
                     <Icon name="chevron-left" />
                   </button>
@@ -467,12 +616,23 @@ export default function PlayerModal() {
                     title="Next Episode"
                     aria-label="Next Episode"
                     disabled={epIndex < 0 || epIndex >= episodes.length - 1}
-                    onClick={() => setEpisode(episodes[epIndex + 1].episode_number)}
+                    onClick={nextEpisode}
                   >
                     <Icon name="chevron-right" />
                   </button>
                 </div>
               )}
+
+              <button
+                type="button"
+                className={`sleep-timer-pill ${sleepTarget ? 'active' : ''}`}
+                onClick={cycleSleepTimer}
+                title="Late-night Sleep Timer: 15m, 30m, 45m, 60m, 90m or Off"
+                aria-label="Toggle Sleep Timer"
+              >
+                <span>🌙</span>
+                <span>{sleepRemaining ? formatSleep(sleepRemaining) : 'Sleep'}</span>
+              </button>
             </div>
 
             <div className="video-wrapper">
@@ -480,12 +640,59 @@ export default function PlayerModal() {
                 <iframe
                   id="modal-video"
                   key={iframeUrl}
-                  src={iframeUrl}
+                  src={isSleeping ? 'about:blank' : iframeUrl}
                   frameBorder="0"
                   allowFullScreen
                   allow="fullscreen *; encrypted-media *; picture-in-picture *; autoplay *"
                   onError={onIframeError}
                 />
+                {isSleeping && (
+                  <div className="sleep-veil-overlay">
+                    <div className="sleep-veil-card">
+                      <span className="sleep-veil-moon">🌙</span>
+                      <h3>SLEEP TIMER EXPIRED</h3>
+                      <p>Playback was suspended to save data and let you rest.</p>
+                      <div className="sleep-veil-actions">
+                        <button
+                          type="button"
+                          className="sleep-veil-resume-btn"
+                          onClick={() => setIsSleeping(false)}
+                        >
+                          ▶ RESUME PLAYBACK
+                        </button>
+                        <button
+                          type="button"
+                          className="sleep-veil-close-btn"
+                          onClick={dismiss}
+                        >
+                          ✕ CLOSE
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {isTV && nextEp && (
+                <div className="binge-up-next-row">
+                  <div className="binge-up-next-info">
+                    <span className="binge-up-next-tag">UP NEXT</span>
+                    <span className="binge-up-next-title">
+                      EP {nextEp.episode_number}: {nextEp.name || `Episode ${nextEp.episode_number}`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="binge-next-btn"
+                    onClick={() => setEpisode(nextEp.episode_number)}
+                  >
+                    ▶ NEXT EPISODE
+                  </button>
+                </div>
+              )}
+              <div className="player-hotkeys-hint">
+                <span className="hotkey-item"><kbd>1-7</kbd> Switch Mirror</span>
+                <span className="hotkey-item"><kbd>ESC</kbd> Close</span>
+                {isTV && <span className="hotkey-item"><kbd>[</kbd> <kbd>]</kbd> Episodes</span>}
               </div>
             </div>
           </div>
@@ -501,23 +708,47 @@ export default function PlayerModal() {
             <div className="modal-text">
               <div className="modal-title-row">
                 <h2 className="tw-done">{typedTitle}</h2>
-                <button
-                  type="button"
-                  className={`copy-link-btn ${copied ? 'copied' : ''}`}
-                  onClick={copyLink}
-                  aria-label="Copy link to this title"
-                  title="Copy link"
-                >
-                  <Icon name={copied ? 'check' : 'link'} />
-                  <span>{copied ? 'Copied!' : 'Copy link'}</span>
-                </button>
+                <div className="modal-actions-group">
+                  <button
+                    type="button"
+                    className={`copy-link-btn modal-watchlist-btn ${inWatchlist ? 'active' : ''}`}
+                    onClick={toggleModalWatchlist}
+                    aria-label={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                    title={inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                  >
+                    <Icon name={inWatchlist ? 'bookmark' : 'bookmark-o'} />
+                    <span>{inWatchlist ? 'In Watchlist' : 'Watchlist'}</span>
+                  </button>
+                  {isTV && (
+                    <button
+                      type="button"
+                      className={`copy-link-btn ${copiedEp ? 'copied' : ''}`}
+                      onClick={copyEpLink}
+                      aria-label="Copy direct link to this specific episode"
+                      title={`Share direct link to Season ${season}, Episode ${episode}`}
+                    >
+                      <Icon name={copiedEp ? 'check' : 'share'} />
+                      <span>{copiedEp ? 'Ep Copied!' : `Share Ep ${episode}`}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={`copy-link-btn ${copied ? 'copied' : ''}`}
+                    onClick={copyLink}
+                    aria-label="Copy link to this title"
+                    title="Copy link"
+                  >
+                    <Icon name={copied ? 'check' : 'link'} />
+                    <span>{copied ? 'Copied!' : 'Copy link'}</span>
+                  </button>
+                </div>
               </div>
               <div className="modal-meta">
                 <div className="stars">
                   {'★'.repeat(Math.round((item.vote_average || 0) / 2))}
                 </div>
                 <span className="release-date">
-                  {new Date(item.release_date || item.first_air_date || '').getFullYear() || ''}
+                  {yearOf(item.release_date || item.first_air_date) || ''}
                 </span>
               </div>
               <p className="tw-done">{typedDesc}</p>

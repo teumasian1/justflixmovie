@@ -31,6 +31,8 @@ export interface TmdbItem {
   original_language?: string;
   media_type?: MediaType;
   runtime?: number;
+  budget?: number;
+  revenue?: number;
   number_of_seasons?: number;
   number_of_episodes?: number;
   status?: string;
@@ -45,6 +47,21 @@ export interface TmdbItem {
   videos?: { results: TmdbVideo[] };
   release_dates?: { results: TmdbReleaseDates[] };
   content_ratings?: { results: TmdbContentRating[] };
+  belongs_to_collection?: {
+    id: number;
+    name: string;
+    poster_path?: string | null;
+    backdrop_path?: string | null;
+  } | null;
+}
+
+export interface TmdbCollection {
+  id: number;
+  name: string;
+  overview?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  parts: TmdbItem[];
 }
 
 export interface TmdbCredits {
@@ -187,6 +204,19 @@ export async function getThemedPicks(genreId: number, limit = 12): Promise<TmdbI
   return filterBanned(data.results || []).slice(0, limit);
 }
 
+// Halloween curated collection — iconic Halloween films, slashers, and spooky favorites.
+export async function getHalloweenPicks(limit = 20): Promise<TmdbItem[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const data = await tmdb<TmdbList>('/discover/movie', {
+    with_keywords: '3335',
+    sort_by: 'popularity.desc',
+    'vote_count.gte': 80,
+    release_date_lte: today,
+    with_release_type: '4|5|6',
+  });
+  return filterBanned(data.results || []).slice(0, limit);
+}
+
 // ---- Detail ----
 export function getDetails(type: MediaType, id: string | number) {
   return tmdb<TmdbItem>(`/${type}/${id}`, {}, 60 * 60 * 24);
@@ -213,6 +243,23 @@ export function getRecommendations(type: MediaType, id: string | number) {
   return tmdb<TmdbList>(`/${type}/${id}/recommendations`, {}, 60 * 60 * 24)
     .then((d) => filterBanned(d.results || []))
     .catch(() => [] as TmdbItem[]);
+}
+
+// Franchise collection (e.g. John Wick 1..4). Used to render the "Part of the [Franchise]" row.
+export async function getCollection(id: number): Promise<TmdbCollection | null> {
+  return tmdb<TmdbCollection>(`/collection/${id}`, {}, 60 * 60 * 24)
+    .then((col) => {
+      if (!col || !Array.isArray(col.parts)) return null;
+      return {
+        ...col,
+        parts: filterBanned(col.parts).sort((a, b) => {
+          const da = a.release_date || '9999';
+          const db = b.release_date || '9999';
+          return da.localeCompare(db);
+        }),
+      };
+    })
+    .catch(() => null);
 }
 
 // ---- Catalog lists (used to build a broad sitemap) ----

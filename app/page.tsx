@@ -2,7 +2,7 @@ import Link from 'next/link';
 import HeroSearch from '@/components/HeroSearch';
 import Row from '@/components/Row';
 import Icon from '@/components/Icon';
-import { getThemedPicks, type TmdbItem } from '@/lib/tmdb';
+import { getThemedPicks, getHalloweenPicks, type TmdbItem } from '@/lib/tmdb';
 
 // Welcome / landing page (site entry point at "/"). Search-first: visitors can
 // look up any title immediately, browse themed picks by mood, or follow the
@@ -60,14 +60,20 @@ export default async function WelcomePage() {
   const tagMovie = (items: TmdbItem[]) =>
     items.map((m) => ({ ...m, media_type: 'movie' as const }));
 
-  const [horror, family, comedy] = await Promise.all([
+  const isOctober = new Date().getMonth() === 9;
+
+  const [halloween, horror, family, comedy, scifi] = await Promise.all([
+    isOctober ? getHalloweenPicks(12).then(tagMovie).catch(() => [] as TmdbItem[]) : Promise.resolve([] as TmdbItem[]),
     getThemedPicks(27).then(tagMovie).catch(() => [] as TmdbItem[]),
     getThemedPicks(10751).then(tagMovie).catch(() => [] as TmdbItem[]),
     getThemedPicks(35).then(tagMovie).catch(() => [] as TmdbItem[]),
+    getThemedPicks(878).then(tagMovie).catch(() => [] as TmdbItem[]),
   ]);
 
   const themedSections = [
+    ...(isOctober ? [{ title: '🎃 Halloween Spooktacular & Horror Classics', items: halloween }] : []),
     { title: "Tonight's Best Horror", items: horror },
+    { title: 'Mind-Bending Sci-Fi & Twists', items: scifi },
     { title: 'Family Movie Night', items: family },
     { title: 'Comedy Favourites', items: comedy },
   ].filter((s) => s.items.length > 0);

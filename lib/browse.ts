@@ -19,6 +19,17 @@ export const COUNTRIES = [
   ['JP', 'Japan'], ['KR', 'South Korea'], ['IN', 'India'], ['CN', 'China'],
 ] as const;
 
+export const NETWORKS = [
+  { id: '', name: 'All Networks', badge: 'ALL' },
+  { id: '213', name: 'Netflix', badge: 'NETFLIX' },
+  { id: '49', name: 'HBO Max', badge: 'HBO' },
+  { id: '2739', name: 'Disney+', badge: 'DISNEY+' },
+  { id: '2552', name: 'Apple TV+', badge: 'APPLE' },
+  { id: '1024', name: 'Prime Video', badge: 'PRIME' },
+  { id: '1112', name: 'Crunchyroll', badge: 'ANIME' },
+  { id: '453', name: 'Hulu', badge: 'HULU' },
+] as const;
+
 export const SORTS = [
   ['popularity.desc', 'Popularity'],
   ['vote_average.desc', 'Rating'],
@@ -35,16 +46,19 @@ export interface BrowseFilters {
   genre: string;
   year: string;
   country: string;
+  network: string;
   sort: string;
   page: number;
 }
 
 export function filtersFromParams(params: URLSearchParams): BrowseFilters {
+  const net = params.get('network') || '';
   return {
-    type: params.get('type') === 'tv' ? 'tv' : 'movie',
+    type: net ? 'tv' : ((params.get('type') as MediaType) === 'tv' ? 'tv' : 'movie'),
     genre: params.get('genre') || '',
     year: params.get('year') || '',
     country: params.get('country') || '',
+    network: net,
     sort: params.get('sort') || 'popularity.desc',
     page: Math.max(1, Number(params.get('page')) || 1),
   };
@@ -55,6 +69,7 @@ export function filtersFromParams(params: URLSearchParams): BrowseFilters {
 export function discoverParams(f: BrowseFilters): Record<string, string> {
   const params: Record<string, string> = { page: String(f.page), sort_by: f.sort };
   if (f.genre) params.with_genres = f.genre;
+  if (f.network) params.with_networks = f.network;
   // Year must use the right per-type param: movies filter by primary release
   // year, TV by first-air year.
   if (f.year) {
@@ -82,9 +97,11 @@ export function filtersLabel(f: BrowseFilters): string {
   const typeLabel = f.type === 'tv' ? 'TV Shows' : 'Movies';
   const genreName = GENRES.find(([v]) => v === f.genre)?.[1];
   const countryName = COUNTRIES.find(([v]) => v === f.country)?.[1];
+  const networkObj = NETWORKS.find((n) => n.id === f.network);
+  const networkName = networkObj?.id ? networkObj.name : '';
   const sortLabel = SORTS.find(([v]) => v === f.sort)?.[1] || 'Popular';
   const head = sortLabel === 'Popular' ? 'Popular' : '';
-  const parts = [head, genreName, typeLabel].filter(Boolean).join(' ');
+  const parts = [networkName, head, genreName, typeLabel].filter(Boolean).join(' ');
   const attrs = [f.year, countryName].filter(Boolean).join(', ');
   return attrs ? `${parts}${attrs ? ` (${attrs})` : ''}` : parts;
 }

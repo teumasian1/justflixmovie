@@ -123,11 +123,25 @@ export function buildDetailMetadata(
 
 // --- JSON-LD helpers ---
 
+export function formatCurrency(amount?: number): string | null {
+  if (!amount || amount <= 0) return null;
+  if (amount >= 1_000_000_000) {
+    return `$${(amount / 1_000_000_000).toFixed(2).replace(/\.00$/, '')}B`;
+  }
+  if (amount >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  }
+  if (amount >= 1_000) {
+    return `$${(amount / 1_000).toFixed(0)}K`;
+  }
+  return `$${amount.toLocaleString()}`;
+}
+
 // The US maturity rating for a title, sourced from the enriched detail response.
 // Movies carry release_dates (we prefer the digital/home-video release type so
 // we get the rating a streamer would show, not the theatrical one); TV carries
 // content_ratings. Returns undefined if there's no US rating rather than "".
-function usRating(item: TmdbItem, type: MediaType): string | undefined {
+export function usRating(item: TmdbItem, type: MediaType): string | undefined {
   if (type === 'movie') {
     const us = (item.release_dates?.results || []).find(
       (r) => r.iso_3166_1 === 'US'

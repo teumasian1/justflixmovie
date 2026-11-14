@@ -4,6 +4,7 @@ import {
   getTrending,
   getTrendingAnime,
   getTrendingKDramas,
+  getHalloweenPicks,
   BACKDROP_URL,
   type TmdbItem,
 } from '@/lib/tmdb';
@@ -11,6 +12,7 @@ import { buildItemListJsonLd } from '@/lib/detail';
 import Banner from '@/components/Banner';
 import Row from '@/components/Row';
 import WatchHistoryRow from '@/components/WatchHistoryRow';
+import WatchlistRow from '@/components/WatchlistRow';
 
 // Curated list page: the banner slideshow + trending rows. Reachable from the
 // welcome landing (/) via the "Browse the curated list" call-to-action.
@@ -30,17 +32,19 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   // Fetch all rows server-side in parallel. A failed row degrades to empty
   // instead of breaking the page.
-  const [movies, tv, anime, kdramas] = await Promise.all([
+  const [movies, tv, anime, kdramas, halloween] = await Promise.all([
     getTrending('movie').catch(() => [] as TmdbItem[]),
     getTrending('tv').catch(() => [] as TmdbItem[]),
     getTrendingAnime().catch(() => [] as TmdbItem[]),
     getTrendingKDramas().catch(() => [] as TmdbItem[]),
+    getHalloweenPicks().catch(() => [] as TmdbItem[]),
   ]);
 
   const movieRow = movies.map((m) => ({ ...m, media_type: 'movie' as const }));
   const tvRow = tv.map((t) => ({ ...t, media_type: 'tv' as const }));
   const animeRow = anime.map((a) => ({ ...a, media_type: 'tv' as const }));
   const kdramaRow = kdramas.map((k) => ({ ...k, media_type: 'tv' as const }));
+  const halloweenRow = halloween.map((h) => ({ ...h, media_type: 'movie' as const }));
 
   const bannerItems = movieRow.filter((m) => m.backdrop_path).slice(0, 4);
 
@@ -65,7 +69,12 @@ export default async function HomePage() {
             keyword-targeted page heading instead of a rotating title. */}
         <h1 className="sr-only">Trending Movies &amp; TV Shows to Watch Free Online</h1>
         <Banner items={bannerItems} />
+        <WatchlistRow />
         <WatchHistoryRow />
+        <Row title="Top 10 Movies Today" items={movieRow} numbered={true} />
+        {halloweenRow.length > 0 && (
+          <Row title="🎃 Halloween Spooktacular & Horror Classics" items={halloweenRow} />
+        )}
         <Row title="Trending Movies to Watch Online" items={movieRow} />
         <Row title="Popular TV Shows to Stream Online" items={tvRow} />
         <Row title="Watch Free Anime Online" items={animeRow} />

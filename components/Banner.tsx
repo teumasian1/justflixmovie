@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BACKDROP_URL, type TmdbItem } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
 import { useModal } from './ModalContext';
+import { openSurpriseModal } from './SurpriseModal';
 import Icon from './Icon';
 
 // Hero banner with a 5s slideshow over the supplied items, ported from the
@@ -93,11 +94,19 @@ export default function Banner({ items }: { items: TmdbItem[] }) {
           <Link href={detailHref} className="banner-button more-info">
             <Icon name="info-circle" /> More Info
           </Link>
+          <button
+            type="button"
+            className="banner-button surprise-banner-btn"
+            onClick={openSurpriseModal}
+            title="Random movie selector"
+          >
+            <Icon name="dice" /> Surprise Me
+          </button>
         </div>
       </div>
       <div className="banner-telemetry" aria-hidden="true">
-        LAT <b>{lat}</b> // LON <b>{lon}</b><br />
-        FEED <b>{String(index + 1).padStart(2, '0')}/{String(slides.length).padStart(2, '0')}</b> // <b ref={clockRef}>--:--:--</b>
+        LAT <b>{lat}</b> {'//'} LON <b>{lon}</b><br />
+        FEED <b>{String(index + 1).padStart(2, '0')}/{String(slides.length).padStart(2, '0')}</b> {'//'} <b ref={clockRef}>--:--:--</b>
       </div>
 
       {/* Slideshow controls — only when there is more than one slide. */}

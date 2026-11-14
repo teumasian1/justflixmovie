@@ -8,7 +8,15 @@ import Icon from './Icon';
 // Horizontal content row with scroll buttons + mouse-drag scrolling, mirroring
 // initListNavigation() from the original home.js.
 
-export default function Row({ title, items }: { title: string; items: TmdbItem[] }) {
+export default function Row({
+  title,
+  items,
+  numbered = false,
+}: {
+  title: string;
+  items: TmdbItem[];
+  numbered?: boolean;
+}) {
   const listRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
 
@@ -69,10 +77,10 @@ export default function Row({ title, items }: { title: string; items: TmdbItem[]
     }
   };
 
-  const withPosters = items.filter((i) => i.poster_path);
+  const withPosters = (numbered ? items.slice(0, 10) : items).filter((i) => i.poster_path);
 
   return (
-    <div className="row">
+    <div className={`row ${numbered ? 'row-top10' : ''}`}>
       <div className="row-header">
         <h2>{title}</h2>
       </div>
@@ -81,7 +89,7 @@ export default function Row({ title, items }: { title: string; items: TmdbItem[]
           <Icon name="chevron-left" />
         </button>
         <div
-          className="list"
+          className={`list ${numbered ? 'list-top10' : ''}`}
           ref={listRef}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
@@ -89,9 +97,18 @@ export default function Row({ title, items }: { title: string; items: TmdbItem[]
           onMouseLeave={stop}
           onClickCapture={onClickCapture}
         >
-          {withPosters.map((item) => (
-            <PosterCard key={`${item.id}-${item.media_type ?? ''}`} item={item} />
-          ))}
+          {withPosters.map((item, idx) =>
+            numbered ? (
+              <div key={`${item.id}-${item.media_type ?? ''}`} className="top10-item-wrap">
+                <span className="top10-rank-num" aria-hidden="true">
+                  {idx + 1}
+                </span>
+                <PosterCard item={item} />
+              </div>
+            ) : (
+              <PosterCard key={`${item.id}-${item.media_type ?? ''}`} item={item} />
+            )
+          )}
         </div>
         <button className="scroll-btn right" aria-label="Scroll right" onClick={() => scrollByDir(1)}>
           <Icon name="chevron-right" />

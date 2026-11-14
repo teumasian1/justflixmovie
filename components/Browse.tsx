@@ -6,6 +6,7 @@ import type { TmdbItem, MediaType } from '@/lib/tmdb';
 import {
   GENRES,
   COUNTRIES,
+  NETWORKS,
   SORTS,
   ITEMS_PER_PAGE,
   discoverParams,
@@ -30,6 +31,29 @@ interface InitialData {
   filters: BrowseFilters;
 }
 
+interface QuickPreset {
+  id: string;
+  label: string;
+  type: MediaType;
+  genre: string;
+  country?: string;
+  sort?: string;
+}
+
+const PRESETS: QuickPreset[] = [
+  { id: 'all', label: '🔥 All Trending', type: 'movie', genre: '', sort: 'popularity.desc' },
+  { id: 'halloween', label: '🎃 Halloween Spooktacular', type: 'movie', genre: '27', sort: 'popularity.desc' },
+  { id: 'rated', label: '⭐ Top Rated (8+)', type: 'movie', genre: '', sort: 'vote_average.desc' },
+  { id: 'action', label: '🍿 Action Blockbusters', type: 'movie', genre: '28' },
+  { id: 'horror', label: '👻 Late Night Horror', type: 'movie', genre: '27' },
+  { id: 'scifi', label: '🧠 Sci-Fi & Mind-Benders', type: 'movie', genre: '878' },
+  { id: 'comedy', label: '😂 Comedy Night', type: 'movie', genre: '35' },
+  { id: 'family', label: '👨‍👩‍👧 Family Movies', type: 'movie', genre: '10751' },
+  { id: 'anime', label: '🇯🇵 Anime Shows', type: 'tv', genre: '16', country: 'JP' },
+  { id: 'kdrama', label: '🇰🇷 Korean Dramas', type: 'tv', genre: '18', country: 'KR' },
+  { id: 'tv-popular', label: '📺 Popular TV Series', type: 'tv', genre: '', sort: 'popularity.desc' },
+];
+
 export default function Browse({
   initial,
 }: {
@@ -48,6 +72,9 @@ export default function Browse({
   const [country, setCountry] = useState(
     initial?.filters.country ?? (searchParams.get('country') || '')
   );
+  const [network, setNetwork] = useState(
+    initial?.filters.network ?? (searchParams.get('network') || '')
+  );
   const [sort, setSort] = useState(
     initial?.filters.sort ?? (searchParams.get('sort') || 'popularity.desc')
   );
@@ -57,9 +84,9 @@ export default function Browse({
   const [loading, setLoading] = useState(!initial);
 
   const seededKey = initial
-    ? `${initial.filters.type}|${initial.filters.genre}|${initial.filters.year}|${initial.filters.country}|${initial.filters.sort}|${initial.filters.page}`
+    ? `${initial.filters.type}|${initial.filters.genre}|${initial.filters.year}|${initial.filters.country}|${initial.filters.network}|${initial.filters.sort}|${initial.filters.page}`
     : '';
-  const currentKey = `${type}|${genre}|${year}|${country}|${sort}|${page}`;
+  const currentKey = `${type}|${genre}|${year}|${country}|${network}|${sort}|${page}`;
   // If the live filters still match the SSR-seeded view, we already have the
   // data — skip the first fetch entirely (avoids a duplicate request).
   const skipNext = !!initial && seededKey === currentKey;
@@ -75,7 +102,7 @@ export default function Browse({
   const fetchContent = useCallback(async () => {
     setLoading(true);
     try {
-      const params = discoverParams({ type, genre, year, country, sort, page });
+      const params = discoverParams({ type, genre, year, country, network, sort, page });
       const qs = new URLSearchParams(params).toString();
       const res = await fetch(`/api/tmdb/discover/${type}?${qs}`);
       const data = await res.json();
@@ -87,7 +114,7 @@ export default function Browse({
     } finally {
       setLoading(false);
     }
-  }, [type, genre, year, country, sort, page]);
+  }, [type, genre, year, country, network, sort, page]);
 
   useEffect(() => {
     if (skipNext) return;
@@ -118,12 +145,13 @@ export default function Browse({
       if (genre) params.set('genre', genre);
       if (year) params.set('year', year);
       if (country) params.set('country', country);
+      if (network) params.set('network', network);
       if (sort !== 'popularity.desc') params.set('sort', sort);
       if (pageNum > 1) params.set('page', String(pageNum));
       const qs = params.toString();
       return qs ? `/browse?${qs}` : '/browse';
     },
-    [type, genre, year, country, sort]
+    [type, genre, year, country, network, sort]
   );
 
   // Keep the URL in sync with the active filters so the current view is
@@ -138,8 +166,61 @@ export default function Browse({
     setPage(1);
   };
 
+  const applyPreset = (p: QuickPreset) => {
+    setType(p.type);
+    setGenre(p.genre);
+    setCountry(p.country || '');
+    setNetwork('');
+    setSort(p.sort || 'popularity.desc');
+    setYear('');
+    setPage(1);
+  };
+
+  const isPresetActive = (p: QuickPreset) => {
+    return (
+      type === p.type &&
+      genre === p.genre &&
+      country === (p.country || '') &&
+      !network &&
+      (p.sort ? sort === p.sort : true) &&
+      !year
+    );
+  };
+
   return (
     <div id="browse-content" className="content-area" style={{ display: 'block' }}>
+      <div className="quick-presets-bar" aria-label="Quick category presets">
+        {PRESETS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={`quick-preset-pill ${isPresetActive(p) ? 'active' : ''}`}
+            onClick={() => applyPreset(p)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="network-hubs-bar" aria-label="Streaming Network Hubs">
+        <span className="network-hubs-label">HUBS:</span>
+        {NETWORKS.map((n) => (
+          <button
+            key={n.id}
+            type="button"
+            className={`network-chip ${network === n.id ? 'active' : ''}`}
+            onClick={() => {
+              if (n.id) setType('tv');
+              setNetwork(n.id);
+              setPage(1);
+            }}
+          >
+            <span className="network-badge-text">{n.badge}</span>
+            <span>{n.name}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="filters-container">
         <div className="filter-group">
           <label>Content Type</label>

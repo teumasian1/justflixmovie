@@ -11,7 +11,10 @@ import DetailView from '@/components/DetailView';
 export const runtime = 'edge';
 export const revalidate = 86400;
 
-type Params = { params: { slug: string } };
+type Params = {
+  params: { slug: string };
+  searchParams?: { s?: string; e?: string };
+};
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const id = idFromSlug(params.slug);
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 }
 
-export default async function TvPage({ params }: Params) {
+export default async function TvPage({ params, searchParams }: Params) {
   const id = idFromSlug(params.slug);
   if (!id || isBannedId(id)) notFound();
   const [item, related] = await Promise.all([
@@ -42,7 +45,17 @@ export default async function TvPage({ params }: Params) {
   if (canonicalPath !== `/tv/${params.slug}`) {
     permanentRedirect(canonicalPath);
   }
+  const initialSeason = searchParams?.s ? Number(searchParams.s) : undefined;
+  const initialEpisode = searchParams?.e ? Number(searchParams.e) : undefined;
+
   return (
-    <DetailView type="tv" item={item} path={canonicalPath} related={related} />
+    <DetailView
+      type="tv"
+      item={item}
+      path={canonicalPath}
+      related={related}
+      initialSeason={Number.isFinite(initialSeason) ? initialSeason : undefined}
+      initialEpisode={Number.isFinite(initialEpisode) ? initialEpisode : undefined}
+    />
   );
 }

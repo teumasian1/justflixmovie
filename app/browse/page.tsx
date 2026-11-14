@@ -38,6 +38,7 @@ function browseCanonical(f: BrowseFilters): string {
   if (f.genre) c.set('genre', f.genre);
   if (f.year) c.set('year', f.year);
   if (f.country) c.set('country', f.country);
+  if (f.network) c.set('network', f.network);
   return `/browse?${c.toString()}`;
 }
 

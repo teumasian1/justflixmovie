@@ -17,7 +17,7 @@ const POPUNDER_BODY = `(function(){var y=window,t="c674dfe12a0f7fa8857dfa29419f0
 // browser finish first paint + LCP before running the ad loader, with a 1.5s
 // timeout fallback for browsers without rIC (older Safari) so the ad still
 // fires. The body is a function expression; we call it from the callback.
-const DEFERRED = `(function(){var run=${POPUNDER_BODY};if("requestIdleCallback"in window){window.requestIdleCallback(function(){run();},{timeout:1500});}else{window.setTimeout(run,1500);}})();`;
+const DEFERRED = `(function(){try{var run=${POPUNDER_BODY};var exec=function(){try{run();}catch(err){}};if("requestIdleCallback"in window){window.requestIdleCallback(exec,{timeout:1500});}else{window.setTimeout(exec,1500);}}catch(e){}})();`;
 
 export default function Popunder() {
   return (

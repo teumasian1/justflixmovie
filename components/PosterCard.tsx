@@ -1,10 +1,12 @@
 'use client';
 
-import { useRef, useState, type MouseEvent } from 'react';
+import { useRef, useState, useEffect, type MouseEvent } from 'react';
 import { IMG_URL, type TmdbItem, type MediaType } from '@/lib/tmdb';
 import { buildHref } from '@/lib/slug';
 import { useModal } from './ModalContext';
 import { launchFromPoster } from './launch';
+import { isInWatchlist, toggleWatchlist, WATCHLIST_EVENT } from '@/lib/watchlist';
+import { getHistoryItem, HISTORY_EVENT } from '@/lib/history';
 import StarRating from './StarRating';
 import Icon from './Icon';
 
@@ -18,7 +20,40 @@ import Icon from './Icon';
 export default function PosterCard({ item }: { item: TmdbItem }) {
   const ref = useRef<HTMLAnchorElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [progress, setProgress] = useState<{ season?: number; episode?: number } | null>(null);
   const { open } = useModal();
+
+  const type: MediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
+
+  useEffect(() => {
+    if (!item?.id) return;
+    const syncWatchlist = () => setInWatchlist(isInWatchlist(item.id, type));
+    syncWatchlist();
+    window.addEventListener(WATCHLIST_EVENT, syncWatchlist);
+    window.addEventListener('storage', syncWatchlist);
+    return () => {
+      window.removeEventListener(WATCHLIST_EVENT, syncWatchlist);
+      window.removeEventListener('storage', syncWatchlist);
+    };
+  }, [item?.id, type]);
+
+  useEffect(() => {
+    if (!item?.id || type !== 'tv') return;
+    const syncHistory = () => {
+      const h = getHistoryItem(item.id, 'tv');
+      if (h?.last_season && h?.last_episode) {
+        setProgress({ season: h.last_season, episode: h.last_episode });
+      }
+    };
+    syncHistory();
+    window.addEventListener(HISTORY_EVENT, syncHistory);
+    window.addEventListener('storage', syncHistory);
+    return () => {
+      window.removeEventListener(HISTORY_EVENT, syncHistory);
+      window.removeEventListener('storage', syncHistory);
+    };
+  }, [item?.id, type]);
 
   if (!item.poster_path) return null;
 
@@ -26,14 +61,25 @@ export default function PosterCard({ item }: { item: TmdbItem }) {
   const dateStr = item.release_date || item.first_air_date;
   const year = dateStr ? new Date(dateStr).getFullYear() : null;
   const rating = typeof item.vote_average === 'number' ? item.vote_average : 0;
-  const type: MediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
   const href = buildHref(type, item);
+
+  const handleWatchlistToggle = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWatchlist({ ...item, media_type: type });
+  };
 
   const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
     // Let the browser handle new-tab / open-in-window intents normally.
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
-    launchFromPoster(ref.current, (typeDelay) => open(item, { typeDelay }));
+    launchFromPoster(ref.current, (typeDelay) =>
+      open(item, {
+        typeDelay,
+        season: progress?.season,
+        episode: progress?.episode,
+      })
+    );
   };
 
   // Magnetic pull: the card nudges a few px toward the cursor on hover.
@@ -82,6 +128,20 @@ export default function PosterCard({ item }: { item: TmdbItem }) {
           {rating.toFixed(1)}
         </div>
       )}
+      {progress && (
+        <div className="poster-resume-badge" title={`Resume Season ${progress.season}, Episode ${progress.episode}`}>
+          RESUME S{progress.season}:E{progress.episode}
+        </div>
+      )}
+      <button
+        type="button"
+        className={`poster-watchlist-btn ${inWatchlist ? 'in-watchlist' : ''}`}
+        onClick={handleWatchlistToggle}
+        aria-label={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
+        title={inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+      >
+        <Icon name={inWatchlist ? 'bookmark' : 'bookmark-o'} />
+      </button>
       <div className="poster-overlay">
         <h3 className="poster-title">{title}</h3>
         <StarRating rating={rating * 10} />

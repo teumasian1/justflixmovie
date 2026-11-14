@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useModal } from './ModalContext';
+import { openSurpriseModal } from './SurpriseModal';
 import Icon from './Icon';
 
 // Bottom mobile tab bar — a thumb-friendly alternative to reaching the top
@@ -31,6 +32,14 @@ export default function MobileTabBar() {
       <Link href="/browse" className={`mobile-tab ${isBrowse ? 'active' : ''}`} aria-current={isBrowse ? 'page' : undefined} tabIndex={item ? -1 : 0}>
         <Icon name="film" />
         <span>Browse</span>
+      </Link>
+      <button type="button" onClick={openSurpriseModal} className="mobile-tab" tabIndex={item ? -1 : 0}>
+        <Icon name="dice" />
+        <span>Surprise</span>
+      </button>
+      <Link href="/home#my-watchlist-section" className="mobile-tab" tabIndex={item ? -1 : 0}>
+        <Icon name="bookmark" />
+        <span>Watchlist</span>
       </Link>
       <button type="button" onClick={goSearch} className={`mobile-tab ${isSearch ? 'active' : ''}`} aria-current={isSearch ? 'page' : undefined} tabIndex={item ? -1 : 0}>
         <Icon name="search" />

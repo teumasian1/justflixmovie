@@ -11,16 +11,26 @@ export interface ServerDef {
 }
 
 export const SERVERS: ServerDef[] = [
-  { name: 'Server 1', id: 'vidup.to', url: 'https://vidup.to' },
-  { name: 'Server 2', id: 'vidsrc.me', url: 'https://vidsrc.me/embed' },
-  { name: 'Server 3', id: 'player.videasy.net', url: 'https://player.videasy.net' },
+  { name: 'Server 1', id: 'vidspark.to', url: 'https://vidspark.to' },
+  { name: 'Server 2', id: 'cinesrc.st', url: 'https://cinesrc.st' },
+  { name: 'Server 3', id: 'cinemaos.tech', url: 'https://cinemaos.tech' },
   { name: 'Server 4', id: 'embed.filmu.in', url: 'https://embed.filmu.in' },
-  { name: 'Server 5', id: 'cinemaos.tech', url: 'https://cinemaos.tech' },
+  { name: 'Server 5', id: 'vidup.to', url: 'https://vidup.to' },
+  { name: 'Server 6', id: 'vidsrc.me', url: 'https://vidsrc.me/embed' },
+  { name: 'Server 7', id: 'player.videasy.net', url: 'https://player.videasy.net' },
 ];
 
 // Servers probed (HEAD) on open to auto-pick a working default, mirroring the
 // original behaviour.
-export const PROBE_SERVERS = ['vidup.to', 'vidsrc.me', 'player.videasy.net'];
+export const PROBE_SERVERS = [
+  'vidspark.to',
+  'cinesrc.st',
+  'cinemaos.tech',
+  'embed.filmu.in',
+  'vidup.to',
+  'vidsrc.me',
+  'player.videasy.net',
+];
 
 export function getServerUrl(
   server: string,
@@ -34,6 +44,16 @@ export function getServerUrl(
   const e = episode;
 
   switch (server) {
+    case 'cinesrc.st':
+      return type === 'movie'
+        ? `https://cinesrc.st/embed/movie/${id}`
+        : `https://cinesrc.st/embed/tv/${id}?s=${s}&e=${e}`;
+
+    case 'vidspark.to':
+      return type === 'movie'
+        ? `https://vidspark.to/movie/${id}`
+        : `https://vidspark.to/tv/${id}/${s}/${e}`;
+
     case 'vidup.to':
       return type === 'movie'
         ? `https://vidup.to/movie/${id}`

@@ -175,10 +175,11 @@ export default function PlayerModal() {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const type = item?.media_type ?? 'movie';
+  const itemId = item?.id;
 
   // ---- Focus management + scroll lock (runs when an item opens/closes) ----
   useEffect(() => {
-    if (!item) return;
+    if (!itemId) return;
 
     // Remember the currently focused element so we can return to it on close.
     lastFocusedRef.current = (document.activeElement as HTMLElement) || null;
@@ -199,7 +200,7 @@ export default function PlayerModal() {
       // Restore focus to whatever opened the modal.
       lastFocusedRef.current?.focus?.();
     };
-  }, [item?.id]);
+  }, [itemId]);
 
   // ---- Escape to close + focus trap ----
   useEffect(() => {

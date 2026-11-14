@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useModal } from './ModalContext';
 import Icon from './Icon';
 import { IMG_URL, BACKDROP_URL, type TmdbItem, type MediaType } from '@/lib/tmdb';
@@ -43,40 +43,7 @@ export default function SurpriseModal() {
   const [saved, setSaved] = useState(false);
   const { open } = useModal();
 
-  useEffect(() => {
-    const onOpen = () => {
-      setIsOpen(true);
-      if (!picked) {
-        rollRandom();
-      }
-    };
-    window.addEventListener(SURPRISE_EVENT, onOpen);
-    return () => window.removeEventListener(SURPRISE_EVENT, onOpen);
-  }, [picked, activeVibe]);
-
-  useEffect(() => {
-    if (!picked) {
-      setSaved(false);
-      return;
-    }
-    const mediaType: MediaType = picked.media_type || (picked.first_air_date ? 'tv' : 'movie');
-    const sync = () => setSaved(isInWatchlist(picked.id, mediaType));
-    sync();
-    window.addEventListener(WATCHLIST_EVENT, sync);
-    return () => window.removeEventListener(WATCHLIST_EVENT, sync);
-  }, [picked]);
-
-  // Lock background scroll when open
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
-
-  const rollRandom = async (overrideVibeId?: string) => {
+  const rollRandom = useCallback(async (overrideVibeId?: string) => {
     const vibeId = overrideVibeId || activeVibe;
     const vibe = VIBES.find((v) => v.id === vibeId) || VIBES[0];
     setRolling(true);
@@ -119,7 +86,40 @@ export default function SurpriseModal() {
     } finally {
       setRolling(false);
     }
-  };
+  }, [activeVibe]);
+
+  useEffect(() => {
+    const onOpen = () => {
+      setIsOpen(true);
+      if (!picked) {
+        rollRandom();
+      }
+    };
+    window.addEventListener(SURPRISE_EVENT, onOpen);
+    return () => window.removeEventListener(SURPRISE_EVENT, onOpen);
+  }, [picked, rollRandom]);
+
+  useEffect(() => {
+    if (!picked) {
+      setSaved(false);
+      return;
+    }
+    const mediaType: MediaType = picked.media_type || (picked.first_air_date ? 'tv' : 'movie');
+    const sync = () => setSaved(isInWatchlist(picked.id, mediaType));
+    sync();
+    window.addEventListener(WATCHLIST_EVENT, sync);
+    return () => window.removeEventListener(WATCHLIST_EVENT, sync);
+  }, [picked]);
+
+  // Lock background scroll when open
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
 
   const handleSelectVibe = (vibeId: string) => {
     setActiveVibe(vibeId);

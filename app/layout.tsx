@@ -1,32 +1,40 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Oswald, Space_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import Link from 'next/link';
 import Script from 'next/script';
 import './globals.css';
 
-// Self-hosted fonts via next/font: downloaded & inlined at build time, served
-// from the same origin (/_next/static/media/). Zero render-blocking external
-// stylesheets, zero third-party DNS/TLS handshakes, no <script> media-swap
-// hack — the previous fonts.googleapis.com / fonts.gstatic.com chain (2
-// preconnects + a deferred <link> + an inline flip script) is gone entirely.
+// Self-hosted fonts via next/font/local + @fontsource: bundled at build time
+// from node_modules and served from the same origin (/_next/static/media/).
+// Zero render-blocking external stylesheets, zero third-party DNS/TLS
+// handshakes, and zero build-time Google Fonts fetch/regex fragility.
 // Each font exposes a CSS variable consumed by the --font-* tokens in
 // globals.css. display:'swap' keeps text visible in the system fallback until
 // the web font arrives (no invisible-text / FOIT).
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const inter = localFont({
+  src: [
+    { path: '../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: '../node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2', weight: '500', style: 'normal' },
+    { path: '../node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2', weight: '600', style: 'normal' },
+    { path: '../node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-inter',
   display: 'swap',
 });
-const oswald = Oswald({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
+const oswald = localFont({
+  src: [
+    { path: '../node_modules/@fontsource/oswald/files/oswald-latin-500-normal.woff2', weight: '500', style: 'normal' },
+    { path: '../node_modules/@fontsource/oswald/files/oswald-latin-600-normal.woff2', weight: '600', style: 'normal' },
+    { path: '../node_modules/@fontsource/oswald/files/oswald-latin-700-normal.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-oswald',
   display: 'swap',
 });
-const spaceMono = Space_Mono({
-  subsets: ['latin'],
-  weight: ['400', '700'],
+const spaceMono = localFont({
+  src: [
+    { path: '../node_modules/@fontsource/space-mono/files/space-mono-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: '../node_modules/@fontsource/space-mono/files/space-mono-latin-700-normal.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-space-mono',
   display: 'swap',
 });

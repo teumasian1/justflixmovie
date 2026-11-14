@@ -13,8 +13,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.justflixmovies
 //
 // TMDB returns 20 results per page, so PAGES_PER_LIST=5 ≈ 100 titles per list.
 // With 4 movie lists + 4 tv lists that's a ceiling of ~800 titles before dedupe.
-export const runtime = 'edge';
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 const PAGES_PER_LIST = 5;
 

@@ -8,8 +8,7 @@ import { getThemedPicks, getHalloweenPicks, type TmdbItem } from '@/lib/tmdb';
 // look up any title immediately, browse themed picks by mood, or follow the
 // call-to-action into the full curated list at /home. Rendered at the edge so
 // crawlers get the full hero + themed rows + SEO copy in the initial HTML.
-export const runtime = 'edge';
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 // FAQPage schema — mirrors the visible FAQ below so the Q&A can show as a rich
 // result. Google requires the structured data to match the on-page text.

@@ -5,8 +5,6 @@ import { filterBanned } from '@/lib/banned';
 // this handler injects the secret API key, so it never reaches the client.
 // Used by the player modal (season/episode lists) and navbar search.
 
-export const runtime = 'edge'; // runs as a Cloudflare Worker on Pages
-
 const BASE_URL = 'https://api.themoviedb.org/3';
 
 // Allowlist of read-only TMDB v3 endpoints used by the client. Prevents this

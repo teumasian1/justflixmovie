@@ -8,8 +8,7 @@ import DetailView from '@/components/DetailView';
 
 // SSR per TV title. Enriched detail (credits/videos/rating for JSON-LD) plus a
 // parallel recommendations fetch for the "More Like This Series" row.
-export const runtime = 'edge';
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 type Params = {
   params: { slug: string };

@@ -19,8 +19,7 @@ import WatchlistRow from '@/components/WatchlistRow';
 // Rendered at the edge so crawlers and the first visitor get fully-rendered
 // content (rows + banner) in the initial HTML, plus an ItemList covering the
 // top titles so Google can render a carousel rich result.
-export const runtime = 'edge';
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Trending Movies & TV Shows to Watch Now',

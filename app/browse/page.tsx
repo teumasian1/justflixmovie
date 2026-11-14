@@ -18,8 +18,7 @@ import Browse from '@/components/Browse';
 // <Browse> then hydrates against that seed and re-fetches only when a filter or
 // page actually changes.
 
-export const runtime = 'edge';
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 // Dynamic metadata keyed to the active filters — each filter combination gets a
 // descriptive title (e.g. "Popular Action Movies of 2024"), so genre/year

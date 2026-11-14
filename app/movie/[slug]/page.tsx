@@ -11,8 +11,7 @@ import DetailView from '@/components/DetailView';
 // enriched detail (credits/videos/rating for JSON-LD) plus the recommendations
 // list in parallel, so detail pages carry a "More Like This" row of internal
 // links (good for crawl coverage) and a richer Movie schema.
-export const runtime = 'edge';
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 type Params = { params: { slug: string } };
 

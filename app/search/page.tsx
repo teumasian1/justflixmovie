@@ -7,7 +7,6 @@ import HeroSearch from '@/components/HeroSearch';
 // shareable and works without JS. Search-result pages are intentionally
 // noindex,follow — standard SEO practice (avoids thin/duplicate indexable URLs)
 // while still letting crawlers follow links out to the indexable detail pages.
-export const runtime = 'edge';
 
 type SearchParams = { q?: string };
 
